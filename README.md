@@ -25,10 +25,35 @@ Use the wrapped build commands below rather than calling `astro build` directly.
 | Dependency alerts fixed | Unique Dependabot alerts currently marked fixed, with their fix timestamp in the reporting period. Dismissals are excluded. This does not claim coverage of all security tools or count unique vulnerabilities. |
 | Successful production deployments | Unique GitHub deployment records targeting `Prod` or `Production` (case-insensitive, trimmed), whose first successful status is in the reporting period. A later inactive status does not erase the deployment. Workflow runs and merged PRs are not deployments. |
 | Work items closed | Unique Jira issues currently in the Done status category with a resolution date in the reporting period, excluding configured epic and canceled/duplicate resolution IDs. Subtasks are included unless explicitly excluded. |
+| Merged pull requests | Unique repository/PR pairs merged within the same reporting interval, regardless of creation date. |
+| Lines added / removed | File-level line changes in those merged PRs after the versioned known-generated path filter. Includes bot changes, docs, tests, and config; repeated edits can contribute repeatedly. Not net growth or unique human-written code. |
+| Bot-authored PRs | Merged PRs authored by actors GitHub explicitly classifies as Bot. Unknown/deleted authors are not silently treated as human. This is not a measure of AI usage or all automation. |
 
 Source scope is the `rwjf` GitHub organization and Jira projects `INSUP` and `RWJFINVEST`. Those identifiers are local configuration/documentation only and are not rendered on the public page.
 
 Reporting uses the **2026 calendar year in America/New_York**, capped at collection time. The cutoff is exclusive. Until the year ends, the page says **2026 so far**. Refreshing later may change counts for reopened issues or alerts; this is a reviewed snapshot, not an immutable event ledger.
+
+### The book comparison
+
+The Delightful scale presentation divides filtered **added lines** by **40 lines per printed page** and **1,424 pages per book**, using the Constance Garnett / Modern Library edition of *War and Peace* as a reference. Forty lines per page is our illustrative printing assumption. The result is a playful estimate—not prose, current repository size, productivity, or code quality. Removed lines are shown separately rather than subtracted from the book quantity.
+
+The `known-generated-v1` policy is defined in `scripts/recap/code-policy.ts`. It excludes recognizable lockfiles, vendor/dependency directories, generated/minified output, and build artifacts by path. It does not claim to recognize every generated file. All intended file pages and their raw totals must reconcile before filtering; truncated/capped reads block approval rather than inflating a partial comparison.
+
+## Add or refresh the playful metrics
+
+Start with a valid approved core snapshot and its local proof files. Then:
+
+```sh
+npm run collect:playful
+```
+
+This verifies the approved input, retains its exact core totals and cutoff, and collects merged-PR/file metadata through the local GitHub CLI. It does **not** require Jira REST credentials or repeat the MCP collection. The new scalar metrics use a version-2 public snapshot and require a fresh review; a version-1 receipt cannot authorize them.
+
+The command saves a complete four-file rollback bundle plus private normalized records, source coverage, and progress under `.recap-private/playful-runs/`. Find the exact paths in `.recap-private/playful-latest.json`. Existing approved JSON and served static output are not replaced by collection. As in the original workflow, changing the pending candidate/report invalidates the old build receipt until approval or restoration.
+
+Review `.recap-private/candidate.json` and `.recap-private/coverage.json`, including line exclusions, bot numerator/denominator, unknown authors, and source coverage. File caps, incomplete pages, unknown authors, and source errors cannot be acknowledged away as inventory uncertainty. Then use the existing explicit approval/build commands below. The new figures and approximate comparison need their own review before replacing the local snapshot; collection never auto-approves or publishes.
+
+If declining a candidate, stop writers and restore **all four** files from the manifest's `backupPath` to the same relative paths at the project root: `src/data/approved.json`, `.recap-private/candidate.json`, `.recap-private/coverage.json`, and `.recap-private/approval.json`. Restore the whole bundle, not only the JSON or receipt, then run `npm run build` to validate it. Do not copy private source evidence into public assets.
 
 ## Collect real data locally
 
