@@ -6,6 +6,10 @@
     "node": ">=22.23.4"
   },
   "scripts": {
+    "collect": "tsx scripts/recap/collect.ts",
+    "approve": "tsx scripts/recap/approve.ts",
+    "build": "tsx scripts/recap/build-input.ts",
+    "build:demo": "tsx scripts/recap/build-input.ts --demo",
     "test": "vitest run tests/recap",
     "check": "astro check"
   },
