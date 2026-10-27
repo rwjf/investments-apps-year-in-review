@@ -14,7 +14,9 @@
     "check": "astro check",
     "dev": "astro dev",
     "preview": "astro preview",
-    "test:browser": "playwright test tests/browser/recap.spec.ts"
+    "test:browser": "playwright test tests/browser/recap.spec.ts",
+    "check:dist": "tsx scripts/check-dist.ts",
+    "publish": "tsx scripts/publish.ts"
   },
   "dependencies": {
     "luxon": "3.7.2",
@@ -26,6 +28,7 @@
     "@types/luxon": "3.7.1",
     "@types/node": "22.20.5",
     "astro": "7.4.2",
+    "gh-pages": "6.3.0",
     "tsx": "4.23.15",
     "typescript": "5.9.2",
     "vitest": "4.1.12"
