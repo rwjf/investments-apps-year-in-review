@@ -110,6 +110,8 @@ npm run preview -- --host 127.0.0.1
 
 The normal build refuses demo or unapproved data. Only `dist/` belongs on a public host—never upload the project directory or private review files. Approved aggregate data and page copy are public, so review them accordingly.
 
+The output checker is defense in depth, not a guarantee that arbitrary content is safe to publish. The strict snapshot schema, curated text, and human review remain the primary privacy boundary. Today's guard deliberately permits only the site's HTML/CSS output; adding fonts, images, or JavaScript requires a reviewed policy update.
+
 ## Static deployment
 
 The simplest recipe is GitHub Pages with a local build and a `gh-pages` branch. No source collection runs in CI and no backend is deployed.
@@ -129,7 +131,7 @@ For a custom-domain or root site, omit `RECAP_BASE_PATH`. The output is also sui
 RECAP_BASE_PATH=/your-repository/ npm run publish
 ```
 
-The publishing command must rebuild approved real data, check the artifact, and publish only `dist/` with `.nojekyll`. Configure GitHub Pages to serve the resulting `gh-pages` branch at its root. Publishing requires ordinary GitHub push access, not Jira credentials on the host. A demo can be previewed locally but cannot pass the real publication guard.
+The publishing command requires an existing reviewed `origin` remote. It clears stale `dist/`, rebuilds approved real data, checks the artifact, and publishes only `dist/` with `.nojekyll`. It intentionally refuses alternate `RECAP_OUT_DIR` settings. Configure GitHub Pages to serve the resulting `gh-pages` branch at its root. Publishing requires ordinary GitHub push access, not Jira credentials on the host. A demo can be previewed locally but cannot pass the real publication guard.
 
 ## Checks
 
