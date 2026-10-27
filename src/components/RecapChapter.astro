@@ -1,0 +1,47 @@
+---
+import type { PublicSnapshot } from '../data/schema';
+
+interface BreakdownItem {
+  label: string;
+  count: number;
+}
+
+interface Props {
+  id: string;
+  index: string;
+  title: string;
+  metricTitle: string;
+  definition: string;
+  metric: PublicSnapshot['metrics']['dependencyAlertsFixed'];
+  breakdown: BreakdownItem[];
+  note?: string;
+}
+
+const { id, index, title, metricTitle, definition, metric, breakdown, note } = Astro.props;
+const count = metric.count === null ? 'Not available' : new Intl.NumberFormat('en-US').format(metric.count);
+---
+<section class="chapter" id={id} aria-labelledby={`${id}-title`}>
+  <header class="chapter__heading">
+    <p class="eyebrow">Chapter {index}</p>
+    <h2 id={`${id}-title`}>{title}</h2>
+  </header>
+  <div class="chapter__body">
+    <div class="chapter__measure">
+      <h3>{metricTitle}</h3>
+      <p class="chapter__count">{count}</p>
+      <p class="chapter__definition">{definition}</p>
+      {metric.status === 'unavailable' && <p class="chapter__unavailable">Not available in this snapshot. No count can be reported.</p>}
+    </div>
+    {metric.status === 'available' && breakdown.length > 0 && (
+      <div class="chapter__breakdown">
+        <h3 class="visually-hidden">{metricTitle} breakdown</h3>
+        <ul>
+          {breakdown.map((item) => (
+            <li><span>{item.label}</span><strong>{new Intl.NumberFormat('en-US').format(item.count)}</strong></li>
+          ))}
+        </ul>
+        {note && <p class="chapter__note">{note}</p>}
+      </div>
+    )}
+  </div>
+</section>

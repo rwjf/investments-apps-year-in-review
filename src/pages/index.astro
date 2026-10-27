@@ -1,0 +1,150 @@
+---
+import { DateTime } from 'luxon';
+import Layout from '../layouts/Layout.astro';
+import MetricCard from '../components/MetricCard.astro';
+import RecapChapter from '../components/RecapChapter.astro';
+import { loadBuildSnapshot } from '../../scripts/recap/build-input';
+
+const snapshot = await loadBuildSnapshot({ allowDemo: process.env.RECAP_ALLOW_DEMO === '1' });
+const timezone = snapshot.timezone;
+const cutoff = DateTime.fromISO(snapshot.cutoffExclusive, { setZone: true }).setZone(timezone);
+const cutoffLabel = cutoff.toFormat("LLLL d, yyyy 'at' h:mm a ZZZZ");
+const lastIncludedMonth = cutoff.minus({ milliseconds: 1 }).toFormat('yyyy-MM');
+const deploymentMetric = snapshot.metrics.productionDeployments;
+const deploymentBreakdown = deploymentMetric.status === 'available'
+  ? deploymentMetric.breakdown
+    .filter((item) => item.label <= lastIncludedMonth)
+    .map((item) => ({
+      label: DateTime.fromFormat(item.label, 'yyyy-MM', { zone: timezone }).toFormat('LLLL'),
+      count: item.count,
+    }))
+  : [];
+const deploymentMonthsOmitted = deploymentMetric.status === 'available'
+  && deploymentMetric.breakdown.length > deploymentBreakdown.length;
+const yearLabel = snapshot.isYearToDate ? `${snapshot.year} so far` : `Calendar year ${snapshot.year}`;
+const coverageNote = snapshot.coverage.notes[0];
+
+const dependencyDefinition = 'Dependabot dependency alerts marked fixed during the reporting period. Dismissed alerts are not counted; this is not a count of all security alerts.';
+const deploymentDefinition = 'Successful deployments to Prod or Production environments, grouped by the month of first success.';
+const workDefinition = 'Completed work items during the reporting period, excluding epics and canceled or duplicate work.';
+---
+<Layout
+  title={`Team year in review · ${snapshot.year}`}
+  description={`An aggregate snapshot of selected team activity for ${snapshot.year}.`}
+  mode={snapshot.mode}
+>
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a class="site-name" href="#top" aria-label="Team year in review, back to top">
+        <span class="site-name__accent" aria-hidden="true"></span>Team year in review
+      </a>
+      <nav class="section-nav" aria-label="Recap sections">
+        <a href="#security">Security</a>
+        <a href="#deployments">Deployments</a>
+        <a href="#work-items">Work items</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main-content" class="page-shell" tabindex="-1">
+    <div id="top"></div>
+    {snapshot.mode === 'demo' && (
+      <aside class="notice notice--demo" aria-label="Illustrative data warning">
+        <span class="notice__symbol" aria-hidden="true">!</span>
+        <p><strong>Illustrative sample · not actual team data</strong>{coverageNote}</p>
+      </aside>
+    )}
+
+    <section class="hero" aria-labelledby="page-title">
+      <div class="hero__copy">
+        <p class="eyebrow">A team recap · {snapshot.year}</p>
+        <h1 id="page-title">A year of shared work.<br /><em>{yearLabel}.</em></h1>
+        <p class="hero__description">
+          The work we moved forward, one fix, deployment, and completed item at a time.
+        </p>
+        <p class="cutoff">Reporting cutoff (exclusive): {cutoffLabel}</p>
+      </div>
+
+      <section class="snapshot" aria-labelledby="snapshot-title">
+        <div class="snapshot__heading">
+          <h2 id="snapshot-title">At a glance</h2>
+          <p>{snapshot.isYearToDate ? 'Calendar year to date' : `Calendar year ${snapshot.year}`}</p>
+        </div>
+        <div class="metric-grid">
+          <MetricCard
+            id="dependency-alerts-fixed"
+            title="Dependency alerts fixed"
+            definition="Dependabot dependency alerts fixed in the reporting period."
+            metric={snapshot.metrics.dependencyAlertsFixed}
+            featured
+          />
+          <MetricCard
+            id="production-deployments"
+            title="Successful production deployments"
+            definition="Prod or Production environments only."
+            metric={snapshot.metrics.productionDeployments}
+          />
+          <MetricCard
+            id="work-items-closed"
+            title="Work items closed"
+            definition="Completed work across the team."
+            metric={snapshot.metrics.workItemsClosed}
+          />
+        </div>
+      </section>
+    </section>
+
+    {snapshot.mode === 'real' && snapshot.coverage.scope === 'accessible-repositories' && (
+      <aside class="coverage-note" aria-label="Coverage limitation">
+        <strong>Coverage is limited</strong>
+        <p>{coverageNote} Not all organization activity may be represented.</p>
+      </aside>
+    )}
+
+    <section class="explore" aria-labelledby="explore-title">
+      <div class="explore__heading">
+        <h2 id="explore-title">Explore the work</h2>
+        <p>Three optional chapters · overview stays in reach</p>
+      </div>
+      <ul class="chapter-index" aria-label="Recap chapters">
+        <li><a href="#security"><small>Chapter 01 · Security</small><strong>Dependency alerts fixed</strong><span aria-hidden="true">↗</span></a></li>
+        <li><a href="#deployments"><small>Chapter 02</small><strong>Production deployments</strong><span aria-hidden="true">↗</span></a></li>
+        <li><a href="#work-items"><small>Chapter 03</small><strong>Work items closed</strong><span aria-hidden="true">↗</span></a></li>
+      </ul>
+    </section>
+
+    <RecapChapter
+      id="security"
+      index="01 · Security"
+      title="Dependency alert fixes"
+      metricTitle="Dependency alerts fixed"
+      definition={dependencyDefinition}
+      metric={snapshot.metrics.dependencyAlertsFixed}
+      breakdown={snapshot.metrics.dependencyAlertsFixed.breakdown}
+    />
+    <RecapChapter
+      id="deployments"
+      index="02"
+      title="Production deployments"
+      metricTitle="Successful production deployments"
+      definition={deploymentDefinition}
+      metric={deploymentMetric}
+      breakdown={deploymentBreakdown}
+      note={deploymentMonthsOmitted ? 'Months after the reporting cutoff are not shown.' : undefined}
+    />
+    <RecapChapter
+      id="work-items"
+      index="03"
+      title="Work items closed"
+      metricTitle="Work items closed"
+      definition={workDefinition}
+      metric={snapshot.metrics.workItemsClosed}
+      breakdown={snapshot.metrics.workItemsClosed.breakdown}
+    />
+
+    <footer class="site-footer">
+      <p>A shared view of the year’s recorded work. Each measure counts a different kind of activity.</p>
+      <p>Reporting timezone: America/New_York · {snapshot.isYearToDate ? 'Year to date' : `Calendar year ${snapshot.year}`} · The cutoff is exclusive.</p>
+    </footer>
+  </main>
+</Layout>

@@ -1,0 +1,23 @@
+---
+import type { PublicSnapshot } from '../data/schema';
+
+interface Props {
+  id: string;
+  title: string;
+  definition: string;
+  metric: PublicSnapshot['metrics']['dependencyAlertsFixed'];
+  featured?: boolean;
+}
+
+const { id, title, definition, metric, featured = false } = Astro.props;
+const count = metric.count === null ? 'Not available' : new Intl.NumberFormat('en-US').format(metric.count);
+---
+<article class:list={['metric-card', { 'metric-card--featured': featured }]} data-testid={`metric-${id}`}>
+  <div class="metric-card__topline">
+    <h2>{title}</h2>
+    <span class="metric-card__mark" aria-hidden="true"></span>
+  </div>
+  <p class="metric-card__count">{count}</p>
+  <p class="metric-card__definition">{definition}</p>
+  {metric.status === 'unavailable' && <p class="metric-card__status">Data was unavailable for this measure in this snapshot.</p>}
+</article>
