@@ -119,7 +119,15 @@ export function checkResponse(response: SourceResponse, coverage: CoverageReport
 
 export async function readGithubPages<T>(
   config: CollectorConfig, path: string, schema: z.ZodType<T>, coverage: CoverageReport,
+  canonicalPath?: string,
 ): Promise<T[]> {
+  const resource = new URL(path, 'https://api.github.com');
+  const filterScope = (url: URL): string => {
+    const filters = new URLSearchParams(url.searchParams);
+    for (const cursor of ['page', 'before', 'after']) filters.delete(cursor);
+    filters.sort();
+    return filters.toString();
+  };
   const records: T[] = [];
   const seen = new Set<string>();
   const seenPages = new Set<string>();
@@ -157,9 +165,11 @@ export async function readGithubPages<T>(
           const target = /^\s*<([^>]+)>/.exec(nextLinks[0]!)?.[1];
           if (!target) throw new Error('Invalid Link');
           const url = new URL(target);
-          // A pagination link cannot change the credential destination or the requested resource.
+          // Only an alias bound to fetched entity metadata may change the resource pathname.
+          // Pagination cursors may change, but filters (notably state=fixed) must not.
           if (url.origin !== 'https://api.github.com' || url.username || url.password || url.hash
-            || url.pathname !== new URL(path, 'https://api.github.com').pathname) throw new Error('Invalid Link');
+            || (url.pathname !== resource.pathname && url.pathname !== canonicalPath)
+            || filterScope(url) !== filterScope(resource)) throw new Error('Invalid Link');
           next = url.pathname + url.search;
         } catch { incomplete(coverage, path, 'pagination'); break; }
       }

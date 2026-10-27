@@ -44,6 +44,7 @@ function config(transport: CollectorConfig['transport']): CollectorConfig {
 
 function githubRoutes(): Record<string, SourceResponse | SourceResponse[]> {
   return {
+    '/orgs/rwjf': ok({ id: 99, login: 'rwjf' }),
     '/orgs/rwjf/repos?type=all&per_page=100': ok([repo(1), repo(2)]),
     '/orgs/rwjf/dependabot/alerts?state=fixed&per_page=100': ok([]),
     '/repos/rwjf/synthetic-1/deployments?per_page=100': ok([]),
@@ -61,6 +62,109 @@ function jiraRoutes(): Record<string, SourceResponse | SourceResponse[]> {
 }
 
 describe('GitHub source collection', () => {
+  it('follows verified canonical organization and repository links through every page and cursor', async () => {
+    const routes = githubRoutes();
+    const link = (path: string) => ({ link: `<https://api.github.com${path}>; rel="next"` });
+    const inventoryNext = '/organizations/99/repos?type=all&per_page=100&page=2';
+    routes['/orgs/rwjf/repos?type=all&per_page=100'] = ok([repo(1)], link(inventoryNext));
+    routes[inventoryNext] = ok([repo(2)]);
+    const alertsNext = '/organizations/99/dependabot/alerts?state=fixed&per_page=100&after=cursor%2B1';
+    const alertsLast = '/organizations/99/dependabot/alerts?state=fixed&per_page=100&before=cursor%2F2';
+    routes['/orgs/rwjf/dependabot/alerts?state=fixed&per_page=100'] = ok([alert(1)], link(alertsNext));
+    routes[alertsNext] = ok([{ ...alert(2), number: 3 }], link(alertsLast));
+    routes[alertsLast] = ok([alert(2)]);
+    const deploymentsNext = '/repositories/1/deployments?per_page=100&page=2';
+    const deploymentsLast = '/repositories/1/deployments?per_page=100&page=3';
+    routes['/repos/rwjf/synthetic-1/deployments?per_page=100'] = ok([{ id: 21, environment: 'Prod' }], link(deploymentsNext));
+    routes[deploymentsNext] = ok([{ id: 22, environment: 'Production' }], link(deploymentsLast));
+    routes[deploymentsLast] = ok([{ id: 23, environment: 'Preview' }]);
+    const statusesNext = '/repositories/1/deployments/21/statuses?per_page=100&page=2';
+    routes['/repos/rwjf/synthetic-1/deployments/21/statuses?per_page=100'] = ok([
+      { state: 'inactive', created_at: '2026-09-01T00:00:00Z' },
+    ], link(statusesNext));
+    routes[statusesNext] = ok([{ state: 'success', created_at: '2026-02-01T00:00:00Z' }]);
+    routes['/repos/rwjf/synthetic-1/deployments/22/statuses?per_page=100'] = ok([]);
+    const f = fixture(routes);
+    const result = await collectGithub(config(f.transport), period);
+    expect(result.alerts.records.map((a) => a.number)).toEqual([1, 3, 2]);
+    expect(result.deployments.records.map((d) => d.id)).toEqual(['21', '22']);
+    expect(result.deployments.records[0]?.statuses.map((s) => s.state)).toEqual(['inactive', 'success']);
+    expect(result.alerts.coverage.complete).toBe(true);
+    expect(result.deployments.coverage.complete).toBe(true);
+    for (const path of [inventoryNext, alertsNext, alertsLast, deploymentsNext, deploymentsLast, statusesNext]) {
+      expect(f.calls.filter((call) => call.path === path)).toHaveLength(1);
+    }
+  });
+
+  it.each([
+    'https://api.github.com/organizations/98/dependabot/alerts?state=fixed&per_page=100&after=next',
+    'https://api.github.com/organizations/99/repos?state=fixed&per_page=100&after=next',
+    'https://foreign.invalid/organizations/99/dependabot/alerts?state=fixed&per_page=100&after=next',
+    'https://user:password@api.github.com/organizations/99/dependabot/alerts?state=fixed&per_page=100&after=next',
+    'https://api.github.com/organizations/99/dependabot/alerts?state=fixed&per_page=100&after=next#fragment',
+    'https://api.github.com/organizations/99/dependabot/alerts?state=open&per_page=100&after=next',
+    'https://api.github.com/organizations/99/dependabot/alerts?per_page=100&after=next',
+    'https://api.github.com/orgs/rwjf/dependabot/alerts?state=open&per_page=100&page=2',
+    'https://api.github.com/organizations/99/dependabot/alerts?state=fixed&state=open&per_page=100&after=next',
+    'https://api.github.com/organizations/99/dependabot/alerts?state=fixed&per_page=100&severity=critical&after=next',
+  ])('rejects organization pagination outside verified resource and filter scope (%s)', async (target) => {
+    const routes = githubRoutes();
+    routes['/orgs/rwjf/dependabot/alerts?state=fixed&per_page=100'] = ok([alert(1)], {
+      link: `<${target}>; rel="next"`,
+    });
+    const f = fixture(routes);
+    const result = await collectGithub(config(f.transport), period);
+    expect(result.alerts.coverage.issues.some((i) => i.reason === 'pagination')).toBe(true);
+    expect(f.calls.filter((c) => c.path.includes('dependabot/alerts'))).toHaveLength(1);
+  });
+
+  it.each([
+    '/repositories/2/deployments?per_page=100&page=2',
+    '/repositories/1/issues?per_page=100&page=2',
+    '/repositories/1/deployments?per_page=100&environment=Prod&page=2',
+  ])('rejects repository pagination outside the verified repository or resource (%s)', async (target) => {
+    const routes = githubRoutes();
+    routes['/repos/rwjf/synthetic-1/deployments?per_page=100'] = ok([], {
+      link: `<https://api.github.com${target}>; rel="next"`,
+    });
+    const f = fixture(routes);
+    const result = await collectGithub(config(f.transport), period);
+    expect(result.deployments.coverage.issues.some((i) => i.reason === 'pagination')).toBe(true);
+    expect(f.calls.some((c) => c.path === target)).toBe(false);
+  });
+
+  it.each([
+    '/repositories/2/deployments/21/statuses?per_page=100&page=2',
+    '/repositories/1/deployments/22/statuses?per_page=100&page=2',
+    '/repositories/1/deployments?per_page=100&page=2',
+  ])('rejects status pagination for a different repository, deployment, or resource (%s)', async (target) => {
+    const routes = githubRoutes();
+    routes['/repos/rwjf/synthetic-1/deployments?per_page=100'] = ok([{ id: 21, environment: 'Prod' }]);
+    routes['/repos/rwjf/synthetic-1/deployments/21/statuses?per_page=100'] = ok([], {
+      link: `<https://api.github.com${target}>; rel="next"`,
+    });
+    const f = fixture(routes);
+    const result = await collectGithub(config(f.transport), period);
+    expect(result.deployments.records).toEqual([]);
+    expect(result.deployments.coverage.issues.some((i) => i.reason === 'pagination')).toBe(true);
+    expect(f.calls.some((c) => c.path === target)).toBe(false);
+  });
+
+  it.each([ok({ id: 99, login: 'another-org' }), { status: 403, body: {}, headers: {} }])(
+    'does not trust canonical organization aliases without successful matching metadata', async (metadata) => {
+      const routes = githubRoutes();
+      routes['/orgs/rwjf'] = metadata;
+      routes['/orgs/rwjf/dependabot/alerts?state=fixed&per_page=100'] = ok([alert(1)], {
+        link: '<https://api.github.com/organizations/99/dependabot/alerts?state=fixed&per_page=100&page=2>; rel="next"',
+      });
+      const f = fixture(routes);
+      const result = await collectGithub(config(f.transport), period);
+      expect(result.alerts.coverage.complete).toBe(false);
+      expect(result.alerts.coverage.issues.some((i) => i.reason === 'failed' || i.reason === 'denied')).toBe(true);
+      expect(f.calls.some((c) => c.path.startsWith('/organizations/'))).toBe(false);
+    },
+  );
+
   it('followsAllPages', async () => {
     const routes = githubRoutes();
     routes['/orgs/rwjf/repos?type=all&per_page=100'] = ok([repo(1)], {

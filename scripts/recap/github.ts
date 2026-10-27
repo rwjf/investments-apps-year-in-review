@@ -1,8 +1,9 @@
 import { readFile } from 'node:fs/promises';
 import { z } from 'zod';
 import type { AlertRecord, CollectionResult, CollectorConfig, DeploymentRecord, Period } from './model';
-import { incomplete, newCoverage, readGithubPages, sourceId, sourceInstant } from './http';
+import { checkResponse, incomplete, newCoverage, readGithubPages, requestWithRetry, sourceId, sourceInstant } from './http';
 
+const organizationSchema = z.object({ id: sourceId.pipe(z.string().regex(/^\d+$/)), login: z.literal('rwjf') });
 const repositorySchema = z.object({
   id: sourceId,
   full_name: z.string().regex(/^rwjf\/[A-Za-z0-9_.-]+$/),
@@ -27,7 +28,18 @@ export async function collectGithub(config: CollectorConfig, _period: Period): P
 }> {
   if (config.organization !== 'rwjf') throw new Error('Unsupported organization scope');
   const inventoryCoverage = newCoverage();
-  const repositories = await readGithubPages(config, '/orgs/rwjf/repos?type=all&per_page=100', repositorySchema, inventoryCoverage);
+  const organizationPath = '/orgs/rwjf';
+  const response = await requestWithRetry(config, { source: 'github', method: 'GET', path: organizationPath });
+  let organizationId: string | undefined;
+  if (checkResponse(response, inventoryCoverage, organizationPath)) {
+    const parsed = organizationSchema.safeParse(response.body);
+    inventoryCoverage.sourceChecks.push({ source: organizationPath, status: parsed.success ? 'success' : 'failed' });
+    if (parsed.success) organizationId = parsed.data.id;
+    else incomplete(inventoryCoverage, organizationPath, 'failed');
+  }
+  const organizationResource = organizationId ? `/organizations/${organizationId}` : undefined;
+  const repositories = await readGithubPages(config, '/orgs/rwjf/repos?type=all&per_page=100', repositorySchema,
+    inventoryCoverage, organizationResource ? `${organizationResource}/repos` : undefined);
   const ids = new Set(repositories.map((repo) => repo.id));
   if (ids.size !== repositories.length) incomplete(inventoryCoverage, 'github-inventory', 'inventory');
   try {
@@ -44,7 +56,8 @@ export async function collectGithub(config: CollectorConfig, _period: Period): P
   const deployments: CollectionResult<DeploymentRecord> = { records: [], coverage: structuredClone(inventoryCoverage) };
 
   // Creation dates never bound alert fixes: an old alert may be fixed in the reporting year.
-  const fixedAlerts = await readGithubPages(config, '/orgs/rwjf/dependabot/alerts?state=fixed&per_page=100', alertSchema, alerts.coverage);
+  const fixedAlerts = await readGithubPages(config, '/orgs/rwjf/dependabot/alerts?state=fixed&per_page=100', alertSchema,
+    alerts.coverage, organizationResource ? `${organizationResource}/dependabot/alerts` : undefined);
   const alertIds = new Set<string>();
   for (const alert of fixedAlerts) {
     const key = `${alert.repository.id}:${alert.number}`;
@@ -56,8 +69,9 @@ export async function collectGithub(config: CollectorConfig, _period: Period): P
   }
   for (const repository of repositories) {
     const path = `/repos/${repository.full_name}/deployments?per_page=100`;
+    const repositoryResource = `/repositories/${encodeURIComponent(repository.id)}`;
     // No proven-safe creation ordering: traverse every deployment page, including archived repositories.
-    const records = await readGithubPages(config, path, deploymentSchema, deployments.coverage);
+    const records = await readGithubPages(config, path, deploymentSchema, deployments.coverage, `${repositoryResource}/deployments`);
     const deploymentIds = new Set<string>();
     for (const deployment of records) {
       if (deploymentIds.has(deployment.id)) { incomplete(deployments.coverage, path, 'pagination', deployment.id); continue; }
@@ -65,7 +79,8 @@ export async function collectGithub(config: CollectorConfig, _period: Period): P
       if (!['prod', 'production'].includes(deployment.environment.trim().toLowerCase())) continue;
       const statusPath = `/repos/${repository.full_name}/deployments/${encodeURIComponent(deployment.id)}/statuses?per_page=100`;
       const priorIssues = deployments.coverage.issues.length;
-      const statuses = await readGithubPages(config, statusPath, statusSchema, deployments.coverage);
+      const statuses = await readGithubPages(config, statusPath, statusSchema, deployments.coverage,
+        `${repositoryResource}/deployments/${encodeURIComponent(deployment.id)}/statuses`);
       if (deployments.coverage.issues.length !== priorIssues) continue;
       deployments.records.push({ repositoryId: repository.id, id: deployment.id, environment: deployment.environment,
         statuses: statuses.map((status) => ({ state: status.state, createdAt: status.created_at })) });
