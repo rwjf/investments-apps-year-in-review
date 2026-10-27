@@ -9,6 +9,8 @@ const snapshot = await loadBuildSnapshot({ allowDemo: process.env.RECAP_ALLOW_DE
 const timezone = snapshot.timezone;
 const cutoff = DateTime.fromISO(snapshot.cutoffExclusive, { setZone: true }).setZone(timezone);
 const cutoffLabel = cutoff.toFormat("LLLL d, yyyy 'at' h:mm a ZZZZ");
+const collectedLabel = DateTime.fromISO(snapshot.collectedAt, { setZone: true }).setZone(timezone)
+  .toFormat("LLLL d, yyyy 'at' h:mm a ZZZZ");
 const lastIncludedMonth = cutoff.minus({ milliseconds: 1 }).toFormat('yyyy-MM');
 const deploymentMetric = snapshot.metrics.productionDeployments;
 const deploymentBreakdown = deploymentMetric.status === 'available'
@@ -144,7 +146,7 @@ const workDefinition = 'Completed work items during the reporting period, exclud
 
     <footer class="site-footer">
       <p>A shared view of the year’s recorded work. Each measure counts a different kind of activity.</p>
-      <p>Reporting timezone: America/New_York · {snapshot.isYearToDate ? 'Year to date' : `Calendar year ${snapshot.year}`} · The cutoff is exclusive.</p>
+      <p>Reporting timezone: America/New_York · {snapshot.isYearToDate ? 'Year to date' : `Calendar year ${snapshot.year}`} · The cutoff is exclusive. · Collected: {collectedLabel}</p>
     </footer>
   </main>
 </Layout>

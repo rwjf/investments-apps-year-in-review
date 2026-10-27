@@ -24,6 +24,8 @@ describe('reporting period', () => {
     expect(() => makePeriod(2026.5, '2026-10-27T16:00:00Z')).toThrow();
     expect(() => makePeriod(2026, 'not-a-timestamp')).toThrow();
     expect(() => monthKey('not-a-timestamp', fullYear())).toThrow();
+    expect(() => withinPeriod('2026-02-30T12:00:00.000+0000', fullYear())).toThrow();
+    expect(() => withinPeriod('2026-04-01T12:00:00.000+2500', fullYear())).toThrow();
   });
 
   it('rejects date-only and offset-less values anywhere an instant is required', () => {

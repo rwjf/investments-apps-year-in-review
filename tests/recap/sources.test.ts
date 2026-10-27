@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { collectGithub } from '../../scripts/recap/github';
 import { collectJira } from '../../scripts/recap/jira';
 import { requestWithRetry } from '../../scripts/recap/http';
+import { countWorkItems } from '../../scripts/recap/metrics';
 import type { CollectorConfig, SourceRequest, SourceResponse } from '../../scripts/recap/model';
 import { makePeriod } from '../../scripts/recap/period';
 
@@ -262,6 +263,31 @@ describe('bounded read transport', () => {
 });
 
 describe('Jira source collection', () => {
+  it('counts REST compact-offset resolution dates across the adapter-to-reducer handoff', async () => {
+    const routes = jiraRoutes();
+    const issues = [
+      '2026-01-01T04:59:59.999+0000',
+      '2026-01-01T05:00:00.000+0000',
+      issue('ordinary').fields.resolutiondate,
+      '2026-10-27T15:59:59.999+0000',
+      '2026-10-27T16:00:00.000+0000',
+    ].map((resolutiondate, index) => {
+      const record = issue(String(index));
+      record.fields.resolutiondate = resolutiondate;
+      return record;
+    });
+    routes['/rest/api/3/search/jql'] = ok({ issues, isLast: true });
+    const c = config(fixture(routes).transport);
+    const result = await collectJira(c, period);
+    expect(result.coverage.complete).toBe(true);
+    expect(result.records).toHaveLength(5);
+    expect(countWorkItems(result.records, period, c.jiraExclusions)).toEqual({
+      status: 'available', count: 3, breakdown: [{ label: 'Task', count: 3 }],
+    });
+    expect(result.records.map((record) => countWorkItems([record], period, c.jiraExclusions).count))
+      .toEqual([0, 1, 1, 1, 0]);
+  });
+
   it('readsResolutionDateFromRest', async () => {
     const routes = jiraRoutes();
     routes['/rest/api/3/search/jql'] = ok({ issues: [issue('a')], isLast: true });
@@ -279,6 +305,19 @@ describe('Jira source collection', () => {
     expect(request.body?.jql).toContain('resolutiondate >=');
     expect(JSON.stringify(request)).not.toMatch(/summary|description/);
   });
+
+  it.each(['2026-04-01', '2026-04-01T12:00:00.000', 'not-a-timestamp', '2026-04-01T12:00:00.000+2500'])(
+    'rejects a resolution date without a valid explicit instant (%s)', async (resolutiondate) => {
+      const routes = jiraRoutes();
+      const record = issue('invalid');
+      record.fields.resolutiondate = resolutiondate;
+      routes['/rest/api/3/search/jql'] = ok({ issues: [record], isLast: true });
+      const result = await collectJira(config(fixture(routes).transport), period);
+      expect(result.records).toEqual([]);
+      expect(result.coverage.complete).toBe(false);
+      expect(result.coverage.sourceChecks).toContainEqual({ source: '/rest/api/3/search/jql', status: 'failed' });
+    },
+  );
 
   it('follows all enhanced search pages', async () => {
     const routes = jiraRoutes();

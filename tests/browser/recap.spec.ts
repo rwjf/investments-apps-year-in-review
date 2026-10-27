@@ -16,6 +16,7 @@ test('sample recap leads with the three team-wide measures and a clear illustrat
   await expect(page.getByTestId('metric-production-deployments')).toContainText('42');
   await expect(page.getByTestId('metric-work-items-closed')).toContainText('316');
   await expect(page.getByText(/Reporting cutoff \(exclusive\): October 27, 2026 at 12:00 PM EDT/)).toBeVisible();
+  await expect(page.locator('.site-footer')).toContainText('Collected: October 27, 2026 at 12:00 PM EDT');
   await expect(page.locator('#deployments')).toContainText('Months after the reporting cutoff are not shown.');
   await expect(page.locator('#deployments')).not.toContainText('November');
   await expect(page.locator('#deployments')).not.toContainText('December');
@@ -50,6 +51,8 @@ test('completed calendar year does not use a year-to-date label', async ({ page 
   await expect(page.getByRole('heading', { level: 1 })).toContainText('2026');
   await expect(page.getByRole('heading', { level: 1 })).not.toContainText('so far');
   await expect(page.locator('.snapshot__heading p')).toHaveText('Calendar year 2026');
+  await expect(page.getByText(/Reporting cutoff \(exclusive\): January 1, 2027 at 12:00 AM EST/)).toBeVisible();
+  await expect(page.locator('.site-footer')).toContainText('Collected: October 27, 2026 at 12:00 PM EDT');
 });
 
 test('chapter links work by keyboard and layout remains usable at narrow and wide widths', async ({ page }) => {
