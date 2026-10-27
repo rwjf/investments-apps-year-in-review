@@ -7,6 +7,7 @@ import { atomicWrite, digest, isMain, jsonText, PROJECT_ROOT, readText } from '.
 import { loadBuildSnapshot } from './build-input';
 import { CODE_POLICY_VERSION } from './code-policy';
 import { collectMergedPullRequests, type PullRequestProgress } from './github-prs';
+import { sourceInstant } from './http';
 import type { CoverageReport, Period } from './model';
 import { publicCoverage, readableCoverage, ReviewReportSchema, ReviewReportV2Schema } from './policy';
 import { countPullRequestActivity } from './pull-request-metrics';
@@ -22,7 +23,7 @@ const configSchema = z.object({
 const count = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER);
 // Persist only the normalized private model, never extra transport fields or actor identities.
 const recordSchema = z.object({
-  repositoryId: z.string().min(1), number: count.positive(), mergedAt: z.iso.datetime({ offset: true }),
+  repositoryId: z.string().min(1), number: count.positive(), mergedAt: sourceInstant,
   authorType: z.string().nullable(), reportedAdditions: count, reportedDeletions: count,
   changedFiles: count, filesComplete: z.boolean(),
   files: z.array(z.object({ path: z.string().min(1), additions: count, deletions: count })),

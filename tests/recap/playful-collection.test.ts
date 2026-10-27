@@ -170,7 +170,7 @@ describe('fixture-backed playful augmentation', () => {
     expect(await readdir(join(root, '.recap-private/playful-runs'))).toHaveLength(2);
   });
 
-  it.each(['unknown', 'incomplete', 'counters', 'pagination', 'graphql', 'throw', 'invalid-count'] as const)(
+  it.each(['unknown', 'incomplete', 'counters', 'pagination', 'graphql', 'throw', 'invalid-count', 'invalid-instant'] as const)(
     'records unavailable metrics and unwaivable coverage for %s without replacing approved JSON', async (failure) => {
       const root = await setup(true);
       const before = await bundle(root);
@@ -180,6 +180,7 @@ describe('fixture-backed playful augmentation', () => {
       if (failure === 'incomplete') items[0]!.filesComplete = false;
       if (failure === 'counters') items[0]!.reportedAdditions++;
       if (failure === 'invalid-count') items[0]!.files[0]!.additions = -1;
+      if (failure === 'invalid-instant') items[0]!.mergedAt = '2026-07-01TFAKE_TOKEN_private-source+0000';
       if (failure === 'pagination' || failure === 'graphql') {
         coverage.complete = false;
         coverage.issues.push({ source: 'github-pr-files', identifier: 'private-source-marker',
@@ -200,6 +201,10 @@ describe('fixture-backed playful augmentation', () => {
       expect(await readText(root, '.recap-private/candidate.json')).not.toMatch(/private-|FAKE_TOKEN/);
       expect(await readText(root, '.recap-private/coverage.json')).not.toContain('FAKE_TOKEN');
       const paths = await latest(root);
+      if (failure === 'invalid-instant') {
+        expect(JSON.parse(await readText(root, paths.recordsPath))).toEqual([]);
+        expect(await readText(root, paths.sourceCoveragePath)).not.toContain('FAKE_TOKEN');
+      }
       expect(await bundle(join(root, paths.backupPath))).toEqual(before);
       expect(await readText(root, 'dist/index.html')).toBe('existing served static snapshot');
     });
@@ -267,6 +272,25 @@ describe('fixture-backed playful augmentation', () => {
     expect(snapshot.playful.linesAdded.count).toBe(56960);
     expect(snapshot.playful.linesRemoved.count).toBe(3);
   });
+
+  it.each(['2026-07-01T12:00:00+0000', '2026-07-01T12:00:00+0530', '2026-07-01T12:00:00-0400'])(
+    'accepts compact source offset %s, retains records, and permits fresh explicit approval', async (mergedAt) => {
+      const root = await setup();
+      const items = records();
+      items[0]!.mergedAt = mergedAt;
+      const snapshot = await collect(root, source(items));
+      expect(snapshot.playful).toEqual({ methodologyVersion: 'known-generated-v1',
+        mergedPullRequests: { status: 'available', count: 2 }, linesAdded: { status: 'available', count: 57000 },
+        linesRemoved: { status: 'available', count: 5 }, botAuthoredPullRequests: { status: 'available', count: 1 },
+        unknownAuthorPullRequests: 0 });
+      const paths = await latest(root);
+      expect(JSON.parse(await readText(root, paths.recordsPath))).toEqual(items);
+      expect(JSON.parse(await readText(root, paths.sourceCoveragePath))).toEqual(clean());
+      await expect(loadBuildSnapshot({ root, allowDemo: false })).rejects.toThrow('Build blocked');
+      await expect(approveSnapshot({ root })).rejects.toThrow('Approval refused');
+      await approveSnapshot({ root, confirmReviewed: true });
+      expect(await loadBuildSnapshot({ root, allowDemo: false })).toEqual(snapshot);
+    });
 
   it('refuses to overwrite a concurrently changed review bundle and keeps the original recoverable backup', async () => {
     const root = await setup();
