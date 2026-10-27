@@ -5,8 +5,8 @@
   "timezone": "America/New_York",
   "productionEnvironments": ["Prod", "Production"],
   "jiraExclusions": {
-    "issueTypeIds": [],
+    "issueTypeIds": ["10644", "10919"],
     "resolutionIds": [],
-    "confirmed": false
+    "confirmed": true
   }
 }
