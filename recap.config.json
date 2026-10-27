@@ -1,0 +1,12 @@
+{
+  "organization": "rwjf",
+  "projects": ["INSUP", "RWJFINVEST"],
+  "year": 2026,
+  "timezone": "America/New_York",
+  "productionEnvironments": ["Prod", "Production"],
+  "jiraExclusions": {
+    "issueTypeIds": ["10644", "10919"],
+    "resolutionIds": [],
+    "confirmed": true
+  }
+}

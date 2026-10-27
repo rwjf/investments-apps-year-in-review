@@ -1,0 +1,213 @@
+---
+import {
+  BATHTUB_LITRES,
+  CAFFEINE_MG_PER_COFFEE,
+  CAFFEINE_MG_PER_DEVELOPER_PER_DAY,
+  COFFEE_ML_PER_CUP,
+  DEVELOPER_COUNT,
+  type CaffeineEstimate,
+} from '../data/caffeine';
+
+interface Props {
+  estimate: CaffeineEstimate;
+}
+
+const { estimate } = Astro.props;
+const number = (value: number, maximumFractionDigits = 0) => new Intl.NumberFormat('en-US', {
+  maximumFractionDigits,
+}).format(value);
+const isZero = estimate.calendarDays === 0;
+const isApprovedSnapshot = estimate.calendarDays === 300
+  && estimate.coffeeLitres === 300
+  && estimate.bathtubEquivalents === 1.5;
+const bathtubLabel = estimate.bathtubEquivalents > 0 && estimate.bathtubEquivalents < 0.001
+  ? 'less than 0.001'
+  : number(estimate.bathtubEquivalents, 3);
+const headline = isApprovedSnapshot
+  ? 'A bathtub and a half of coffee.'
+  : isZero
+    ? 'No coffee estimate for this period.'
+    : estimate.bathtubEquivalents < 0.001
+      ? 'Less than 0.001 bathtub equivalents of coffee.'
+      : `About ${bathtubLabel} bathtub equivalents of coffee.`;
+const coffeeDescription = isApprovedSnapshot
+  ? 'About 300 litres. Please continue using mugs.'
+  : isZero
+    ? 'There are no calendar days in this reporting period.'
+    : `About ${number(estimate.coffeeLitres, 2)} litres. Please continue using mugs.`;
+---
+
+<section class="coffee-scale" aria-labelledby="coffee-scale-title" data-testid="coffee-scale">
+  <div class="coffee-scale__copy">
+    <p class="coffee-scale__eyebrow">Estimated coffee equivalent</p>
+    <h2 id="coffee-scale-title" data-testid="caffeine-headline">{headline}</h2>
+    <p class="coffee-scale__description" data-testid="caffeine-litres">{coffeeDescription}</p>
+    <p class="coffee-scale__caffeine" data-testid="caffeine-total">
+      <strong>{number(estimate.totalCaffeineGrams, 2)} g</strong>
+      <span>estimated caffeine equivalent</span>
+    </p>
+    <details class="coffee-scale__details">
+      <summary>How we estimated it</summary>
+      <p>
+        A playful estimate for {estimate.calendarDays} calendar days: {DEVELOPER_COUNT} developers ×
+        {' '}{CAFFEINE_MG_PER_DEVELOPER_PER_DAY} mg each per calendar day. For scale, we use
+        {' '}{CAFFEINE_MG_PER_COFFEE} mg per {COFFEE_ML_PER_CUP} ml coffee and a {BATHTUB_LITRES}-litre bathtub.
+        This is not a measure of anyone’s actual caffeine intake.
+      </p>
+    </details>
+  </div>
+
+  {isZero ? (
+    <div class="coffee-scale__empty" aria-hidden="true">No pour today.</div>
+  ) : (
+    <div class="coffee-scale__art" aria-hidden="true">
+      <span class="coffee-scale__steam coffee-scale__steam--one"></span>
+      <span class="coffee-scale__steam coffee-scale__steam--two"></span>
+      <div class="coffee-scale__tub">
+        <strong>{bathtubLabel}<span>×</span></strong>
+        <small>bathtub equivalents</small>
+      </div>
+      <span class="coffee-scale__foot coffee-scale__foot--left"></span>
+      <span class="coffee-scale__foot coffee-scale__foot--right"></span>
+      <p>One tub = {BATHTUB_LITRES} litres</p>
+    </div>
+  )}
+</section>
+
+<style>
+  .coffee-scale {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(150px, 0.55fr);
+    align-items: center;
+    gap: clamp(1.25rem, 4vw, 3rem);
+    margin: 0 0 clamp(3rem, 6vw, 5rem);
+    padding: clamp(1.15rem, 4vw, 2.15rem);
+    border: 1px solid var(--blue);
+    border-radius: 0.35rem 1.2rem 0.35rem 1.2rem;
+    background: linear-gradient(118deg, #fffefa 0 67%, #f3e5f7 67% 100%);
+    box-shadow: 6px 6px 0 var(--mint);
+  }
+
+  .coffee-scale__copy { min-width: 0; }
+  .coffee-scale__eyebrow {
+    display: inline-block;
+    margin: 0 0 0.8rem;
+    padding: 0.35rem 0.55rem;
+    background: var(--yellow);
+    color: var(--blue);
+    font-size: 0.66rem;
+    font-weight: 850;
+    letter-spacing: 0.1em;
+    line-height: 1.3;
+    text-transform: uppercase;
+  }
+  .coffee-scale h2 {
+    max-width: 660px;
+    margin: 0;
+    font-family: "Iowan Old Style", "Baskerville", Georgia, serif;
+    font-size: clamp(1.65rem, 4.1vw, 3rem);
+    font-weight: 600;
+    letter-spacing: -0.045em;
+    line-height: 1;
+  }
+  .coffee-scale__description {
+    margin: 0.75rem 0 1.1rem;
+    color: var(--ink-soft);
+    font-size: clamp(0.9rem, 1.6vw, 1.05rem);
+    line-height: 1.5;
+  }
+  .coffee-scale__caffeine {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.15rem 0.5rem;
+    margin: 0 0 0.8rem;
+  }
+  .coffee-scale__caffeine strong {
+    color: var(--purple-dark);
+    font-family: "Iowan Old Style", "Baskerville", Georgia, serif;
+    font-size: 1.5rem;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .coffee-scale__caffeine span { color: var(--ink-soft); font-size: 0.7rem; font-weight: 750; }
+  .coffee-scale__details { color: #405865; font-size: 0.72rem; line-height: 1.5; }
+  .coffee-scale__details summary {
+    width: fit-content;
+    color: var(--blue);
+    cursor: pointer;
+    font-weight: 800;
+    text-decoration: underline;
+    text-decoration-color: #af45c990;
+    text-underline-offset: 0.2em;
+  }
+  .coffee-scale__details p { max-width: 42rem; margin: 0.55rem 0 0; }
+
+  .coffee-scale__art {
+    position: relative;
+    display: flex;
+    min-width: 0;
+    min-height: 150px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding-top: 1rem;
+  }
+  .coffee-scale__tub {
+    position: relative;
+    display: flex;
+    width: min(100%, 205px);
+    min-height: 76px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid var(--blue);
+    border-top-width: 8px;
+    border-radius: 0.25rem 0.25rem 2.2rem 2.2rem;
+    background: var(--white);
+    transform: rotate(-2deg);
+  }
+  .coffee-scale__tub strong {
+    color: var(--purple-dark);
+    font-family: "Iowan Old Style", "Baskerville", Georgia, serif;
+    font-size: clamp(1.8rem, 4vw, 2.55rem);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.06em;
+    line-height: 0.9;
+  }
+  .coffee-scale__tub strong span { font-size: 0.58em; }
+  .coffee-scale__tub small { margin-top: 0.25rem; color: var(--ink-soft); font-size: 0.58rem; font-weight: 800; }
+  .coffee-scale__foot { position: absolute; bottom: 1.05rem; width: 5px; height: 19px; background: var(--blue); }
+  .coffee-scale__foot--left { left: 22%; transform: rotate(7deg); }
+  .coffee-scale__foot--right { right: 22%; transform: rotate(-7deg); }
+  .coffee-scale__steam {
+    position: absolute;
+    top: 0.1rem;
+    width: 0.45rem;
+    height: 1.1rem;
+    border-left: 2px solid var(--purple);
+    border-radius: 50%;
+    transform: rotate(12deg);
+  }
+  .coffee-scale__steam--one { margin-left: -0.9rem; }
+  .coffee-scale__steam--two { margin-left: 0.8rem; height: 0.85rem; transform: rotate(-10deg); }
+  .coffee-scale__art p { margin: 0.55rem 0 0; color: var(--ink-soft); font-size: 0.62rem; font-weight: 750; letter-spacing: 0.03em; }
+  .coffee-scale__empty {
+    max-width: 11rem;
+    padding: 1rem;
+    border: 1px dashed #79358b;
+    border-radius: 50%;
+    color: var(--purple-dark);
+    font-family: "Iowan Old Style", "Baskerville", Georgia, serif;
+    font-size: 1.1rem;
+    font-style: italic;
+    text-align: center;
+    transform: rotate(-5deg);
+  }
+
+  @media (max-width: 600px) {
+    .coffee-scale { grid-template-columns: minmax(0, 1fr); gap: 0.75rem; background: linear-gradient(160deg, #fffefa 0 76%, #f3e5f7 76% 100%); }
+    .coffee-scale__art { min-height: 125px; padding-top: 0.25rem; }
+    .coffee-scale__tub { width: min(75%, 205px); }
+  }
+</style>

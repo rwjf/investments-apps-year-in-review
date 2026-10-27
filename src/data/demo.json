@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 2,
+  "mode": "demo",
+  "year": 2026,
+  "timezone": "America/New_York",
+  "periodStart": "2026-01-01T05:00:00.000Z",
+  "periodEndExclusive": "2027-01-01T05:00:00.000Z",
+  "cutoffExclusive": "2026-10-27T16:00:00.000Z",
+  "collectedAt": "2026-10-27T16:00:00.000Z",
+  "isYearToDate": true,
+  "metrics": {
+    "dependencyAlertsFixed": {
+      "status": "available",
+      "count": 128,
+      "breakdown": [
+        { "label": "Critical", "count": 5 },
+        { "label": "High", "count": 25 },
+        { "label": "Medium", "count": 55 },
+        { "label": "Low", "count": 43 }
+      ]
+    },
+    "productionDeployments": {
+      "status": "available",
+      "count": 42,
+      "breakdown": [
+        { "label": "2026-01", "count": 3 },
+        { "label": "2026-02", "count": 4 },
+        { "label": "2026-03", "count": 5 },
+        { "label": "2026-04", "count": 3 },
+        { "label": "2026-05", "count": 4 },
+        { "label": "2026-06", "count": 4 },
+        { "label": "2026-07", "count": 5 },
+        { "label": "2026-08", "count": 3 },
+        { "label": "2026-09", "count": 4 },
+        { "label": "2026-10", "count": 7 },
+        { "label": "2026-11", "count": 0 },
+        { "label": "2026-12", "count": 0 }
+      ]
+    },
+    "workItemsClosed": {
+      "status": "available",
+      "count": 316,
+      "breakdown": [
+        { "label": "Task", "count": 166 },
+        { "label": "Story", "count": 82 },
+        { "label": "Bug", "count": 42 },
+        { "label": "Subtask", "count": 18 },
+        { "label": "Other", "count": 8 }
+      ]
+    }
+  },
+  "playful": {
+    "methodologyVersion": "known-generated-v1",
+    "mergedPullRequests": { "status": "available", "count": 4 },
+    "linesAdded": { "status": "available", "count": 56960 },
+    "linesRemoved": { "status": "available", "count": 23840 },
+    "botAuthoredPullRequests": { "status": "available", "count": 1 },
+    "unknownAuthorPullRequests": 0
+  },
+  "coverage": {
+    "scope": "accessible-repositories",
+    "notes": ["Illustrative example only; no source data was collected."]
+  }
+}

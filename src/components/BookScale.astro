@@ -1,0 +1,59 @@
+---
+import { bookEquivalents, BOOK_PAGES, LINES_PER_PAGE, type ScalarMetric } from '../data/playful';
+
+interface Props {
+  linesAdded: ScalarMetric;
+}
+
+const { linesAdded } = Astro.props;
+const number = (value: number) => new Intl.NumberFormat('en-US').format(value);
+const quantity = linesAdded.status === 'available' ? bookEquivalents(linesAdded.count) : null;
+const bookCopy = (amount: number) => {
+  if (amount === 0) return 'Zero book-sized stacks';
+  if (Math.abs(amount - 1) < 0.000001) return 'About 1 copy of War and Peace';
+  if (Math.abs(amount - 0.5) < 0.000001) return 'About half a copy of War and Peace';
+  if (amount < 1) return `About ${amount.toFixed(1)} of a War and Peace`;
+  return `About ${amount.toFixed(1)} copies of War and Peace`;
+};
+const bookProgress = quantity === null ? 0 : Math.min(quantity, 1);
+---
+<section class="book-scale" aria-label="Added code, compared with a printed book">
+  <div class="book-scale__copy">
+    <p class="chapter-label"><span class="chapter-label__number">01</span> &nbsp; THE CODE-ADDED EDITION</p>
+    {quantity !== null && <p class="book-scale__result" data-testid="book-result">{bookCopy(quantity)}</p>}
+    {quantity !== null && <p class="book-scale__book-title"><em>War and Peace</em>, meet code and coffee.</p>}
+    <div class="book-scale__total-row">
+      <span class="book-scale__total-label">Lines added</span>
+      <strong data-testid="code-added-total">{linesAdded.status === 'available' ? number(linesAdded.count) : 'Not available'}</strong>
+    </div>
+    {linesAdded.status === 'unavailable' ? (
+      <p class="book-scale__method">The book comparison is waiting for complete added-line totals. No volume estimate yet.</p>
+    ) : (
+      <p class="book-scale__method">
+        A playful estimate: {LINES_PER_PAGE} code lines per printed page × {BOOK_PAGES.toLocaleString('en-US')} pages in this <em>War and Peace</em> edition. Not a claim that code reads like a novel.
+      </p>
+    )}
+    <details class="book-scale__details">
+      <summary>What does this count?</summary>
+      <p>These are added lines across merged changes. They can include repeated edits, reversals, bot-authored changes, and code later removed—not unique human-written code or a quality score. Path filters exclude recognizable lockfiles, vendored dependencies, generated directories, minified output, and build artifacts. Path matching cannot catch every generated file; ordinary documentation, tests, and config files may remain.</p>
+    </details>
+  </div>
+
+  {linesAdded.status === 'available' && linesAdded.count > 0 && (
+    <div class="book-scale__art" aria-label={`${quantity!.toFixed(2)} book equivalents, shown as progress toward a printed volume`}>
+      <div class="book-illustration">
+        <div class="book-illustration__pages" aria-hidden="true"></div>
+        <div class="book-illustration__cover" aria-hidden="true">
+          <span class="book-illustration__seal">THE<br />CODE<br />EDITION</span>
+          <span class="book-illustration__title">WAR<br /><i>+</i><br />PEACE</span>
+          <span class="book-illustration__rule" aria-hidden="true"></span>
+          <span class="book-illustration__byline">A very loose comparison</span>
+        </div>
+        <span class="book-illustration__bookmark" aria-hidden="true"></span>
+      </div>
+      <label class="book-scale__meter-label" for="book-progress">Progress toward one book</label>
+      <meter id="book-progress" class="book-scale__meter" min="0" max="1" value={bookProgress}>{bookProgress}</meter>
+      <p class="book-scale__progress-note">One book = {number(LINES_PER_PAGE * BOOK_PAGES)} added lines, by our very approximate page math.</p>
+    </div>
+  )}
+</section>

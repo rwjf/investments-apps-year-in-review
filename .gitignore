@@ -1,0 +1,11 @@
+.env
+.env.*
+!.env.example
+.recap-private/
+.superpowers/
+node_modules/
+dist/
+.astro/
+playwright-report/
+test-results/
+.DS_Store

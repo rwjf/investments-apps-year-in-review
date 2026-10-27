@@ -1,0 +1,137 @@
+{
+  "schemaVersion": 2,
+  "mode": "real",
+  "year": 2026,
+  "timezone": "America/New_York",
+  "periodStart": "2026-01-01T05:00:00.000Z",
+  "periodEndExclusive": "2027-01-01T05:00:00.000Z",
+  "cutoffExclusive": "2026-10-27T17:28:51.121Z",
+  "collectedAt": "2026-10-27T18:44:10.171Z",
+  "isYearToDate": true,
+  "metrics": {
+    "dependencyAlertsFixed": {
+      "status": "available",
+      "count": 935,
+      "breakdown": [
+        {
+          "label": "Critical",
+          "count": 63
+        },
+        {
+          "label": "High",
+          "count": 442
+        },
+        {
+          "label": "Medium",
+          "count": 348
+        },
+        {
+          "label": "Low",
+          "count": 82
+        }
+      ]
+    },
+    "productionDeployments": {
+      "status": "available",
+      "count": 67,
+      "breakdown": [
+        {
+          "label": "2026-01",
+          "count": 0
+        },
+        {
+          "label": "2026-02",
+          "count": 0
+        },
+        {
+          "label": "2026-03",
+          "count": 2
+        },
+        {
+          "label": "2026-04",
+          "count": 0
+        },
+        {
+          "label": "2026-05",
+          "count": 2
+        },
+        {
+          "label": "2026-06",
+          "count": 0
+        },
+        {
+          "label": "2026-07",
+          "count": 2
+        },
+        {
+          "label": "2026-08",
+          "count": 27
+        },
+        {
+          "label": "2026-09",
+          "count": 11
+        },
+        {
+          "label": "2026-10",
+          "count": 23
+        },
+        {
+          "label": "2026-11",
+          "count": 0
+        },
+        {
+          "label": "2026-12",
+          "count": 0
+        }
+      ]
+    },
+    "workItemsClosed": {
+      "status": "available",
+      "count": 515,
+      "breakdown": [
+        {
+          "label": "Task",
+          "count": 277
+        },
+        {
+          "label": "Bug",
+          "count": 209
+        },
+        {
+          "label": "Subtask",
+          "count": 4
+        },
+        {
+          "label": "Other",
+          "count": 25
+        }
+      ]
+    }
+  },
+  "coverage": {
+    "scope": "accessible-repositories",
+    "notes": [
+      "Limited to accessible sources; independent organization inventory or project visibility was not verified."
+    ]
+  },
+  "playful": {
+    "methodologyVersion": "known-generated-v1",
+    "mergedPullRequests": {
+      "status": "available",
+      "count": 219
+    },
+    "linesAdded": {
+      "status": "available",
+      "count": 360076
+    },
+    "linesRemoved": {
+      "status": "available",
+      "count": 101297
+    },
+    "botAuthoredPullRequests": {
+      "status": "available",
+      "count": 12
+    },
+    "unknownAuthorPullRequests": 0
+  }
+}

@@ -1,0 +1,26 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description: string;
+  mode: 'demo' | 'real';
+}
+
+const { title, description, mode } = Astro.props;
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta name="recap-mode" content={mode} />
+    <meta name="theme-color" content="#ffffff" />
+    <title>{title}</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to recap</a>
+    <slot />
+  </body>
+</html>
