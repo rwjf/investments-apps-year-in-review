@@ -2,7 +2,7 @@
 
 A static, public-friendly recap of the team's 2026 work. The website contains reviewed aggregate counts—not source records, people, repository names, or issue details.
 
-**Current status:** the demo and fixture-backed implementation have been verified locally. Real Jira credentials and mappings, complete source coverage, and an actual public deployment still need validation. The bundled example is not real team data.
+**Current status:** a real 2026 snapshot has been collected through Jira MCP and GitHub, reviewed, and approved for the local preview with a visible limited-coverage caveat. Complete organization-wide visibility has not been independently established, and nothing has been publicly deployed. The separate bundled demo remains illustrative.
 
 ## Preview the example
 
@@ -42,7 +42,7 @@ gh auth status
 
 The account must be able to read the intended organization repositories, Dependabot alerts, deployment records, and deployment status history. Being able to see some private repositories does not establish access to the whole organization. Respect your organization's access policies; do not broaden permissions merely to silence a coverage warning.
 
-For Jira, create a local `.env` from `.env.example` and fill in the values **on your machine**, not in chat or source control. The collector uses Jira Cloud REST with your email and API token; the account needs Browse Projects and any relevant issue-security access.
+The current snapshot used the connected Jira MCP session, so it did not require a separate Jira token. To rerun the standalone REST collector, create a local `.env` from `.env.example` and fill in the values **on your machine**, not in chat or source control. That collector uses Jira Cloud REST with your email and API token; the account needs Browse Projects and any relevant issue-security access.
 
 ```sh
 cp .env.example .env
@@ -56,7 +56,7 @@ Only source a local file you created and trust. The commands do not automaticall
 
 ### 2. Confirm Jira mappings and coverage
 
-Review `recap.config.json`. Set the observed issue-type IDs for epics and resolution IDs for canceled/duplicate/not-done work under `jiraExclusions`. Set `confirmed: true` **only after checking the actual workflows**. The initial empty, unconfirmed mapping intentionally blocks real approval; do not turn it on just to make a build pass.
+Review `recap.config.json`. The included epic exclusions and Done workflow mapping were checked against the connected Jira projects for this snapshot. Recheck them if workflows change, including resolution IDs for canceled/duplicate/not-done work under `jiraExclusions`. Set `confirmed: true` **only after checking the actual workflows**. An unconfirmed mapping intentionally blocks real approval; do not turn it on just to make a build pass.
 
 Full-scope claims also need an independently reviewed private inventory/visibility record. Set `inventoryPath` to a file under `.recap-private/`, for example `.recap-private/inventory.json`. Its shape is:
 

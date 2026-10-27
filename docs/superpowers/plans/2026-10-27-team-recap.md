@@ -12,6 +12,8 @@
 
 **Execution status:** All seven implementation tasks and scoped reviews completed on `feat/team-recap`. Integrated validation passed 182 tests, seven applicable browser scenarios, static demo build/output inspection, Astro checks, and dependency audit; a final Jira timestamp interoperability fix additionally passed 53 impacted tests and two targeted browser scenarios. Final cross-system re-review approved local software use. Live-source acceptance and publication remain pending; do not re-execute completed implementation tasks to address credential setup.
 
+**Real-data follow-up:** Jira MCP and GitHub collection completed at the fixed October 27 cutoff. A metadata-bound GitHub canonical-pagination fix passed independent review and the expanded 206-test suite. The user explicitly approved the real aggregate snapshot for local preview with the accessible-source caveat: 935 dependency fixes, 67 successful production deployments, and 515 completed work items. Real static build and output guard passed. Full organization-wide visibility and public publication remain unapproved/unverified.
+
 ## Global Constraints
 
 - Jira scope: INSUP and RWJFINVEST.
