@@ -69,6 +69,15 @@ describe('PublicSnapshotSchema', () => {
     expect(PublicSnapshotSchema.safeParse({ ...validDemo(), collectedAt: 'not-a-timestamp' }).success).toBe(false);
   });
 
+  it.each([
+    ['periodStart', '2025-01-01T05:00:00Z'],
+    ['periodStart', '2026-01-01T04:59:59Z'],
+    ['periodEndExclusive', '2028-01-01T05:00:00Z'],
+    ['periodEndExclusive', '2027-01-01T05:00:01Z'],
+  ] as const)('rejects a %s that is not the declared calendar-year boundary', (field, value) => {
+    expect(PublicSnapshotSchema.safeParse({ ...validDemo(), [field]: value }).success).toBe(false);
+  });
+
   it('rejects unavailable metrics that carry a numeric zero', () => {
     const snapshot = validDemo();
     snapshot.metrics.workItemsClosed = { status: 'unavailable', count: 0, breakdown: [] };

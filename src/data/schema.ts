@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { DateTime } from 'luxon';
 
 const timestampSchema = z.iso.datetime({ offset: true }).refine(
   (value) => Number.isFinite(Date.parse(value)),
@@ -59,6 +60,21 @@ export const PublicSnapshotSchema = z.object({
   const start = Date.parse(snapshot.periodStart);
   const end = Date.parse(snapshot.periodEndExclusive);
   const cutoff = Date.parse(snapshot.cutoffExclusive);
+  const expectedStart = DateTime.fromObject(
+    { year: snapshot.year, month: 1, day: 1 },
+    { zone: snapshot.timezone },
+  ).toMillis();
+  const expectedEnd = DateTime.fromObject(
+    { year: snapshot.year + 1, month: 1, day: 1 },
+    { zone: snapshot.timezone },
+  ).toMillis();
+
+  if (start !== expectedStart) {
+    context.addIssue({ code: 'custom', path: ['periodStart'], message: 'Period start must be the declared year start in the reporting timezone' });
+  }
+  if (end !== expectedEnd) {
+    context.addIssue({ code: 'custom', path: ['periodEndExclusive'], message: 'Period end must be the exclusive start of the following year in the reporting timezone' });
+  }
   if (!(start < end && cutoff >= start && cutoff <= end)) {
     context.addIssue({ code: 'custom', path: ['cutoffExclusive'], message: 'Period boundaries must be ordered and cutoff must be within the period' });
   }

@@ -2,8 +2,13 @@ import { DateTime } from 'luxon';
 import type { Period } from './model';
 
 const TIMEZONE = 'America/New_York' as const;
+const EXPLICIT_OFFSET = /(?:Z|[+-]\d{2}:\d{2})$/i;
 
 function parseInstant(instant: string): DateTime {
+  if (!instant.includes('T') || !EXPLICIT_OFFSET.test(instant)) {
+    throw new RangeError(`Timestamp must include an explicit timezone offset: ${instant}`);
+  }
+
   const parsed = DateTime.fromISO(instant, { setZone: true });
   if (!parsed.isValid) {
     throw new RangeError(`Invalid timestamp: ${instant}`);
