@@ -42,6 +42,11 @@ robotsZeroSnapshot.playful.mergedPullRequests = { status: 'available', count: 0 
 robotsZeroSnapshot.playful.botAuthoredPullRequests = { status: 'available', count: 0 };
 const robotsZeroRoot = await writeFixture('robots-zero', robotsZeroSnapshot);
 
+const robotsUnknownSnapshot = structuredClone(demo) as unknown as PublicSnapshotV2;
+robotsUnknownSnapshot.playful.botAuthoredPullRequests = { status: 'unavailable', count: null };
+robotsUnknownSnapshot.playful.unknownAuthorPullRequests = 2;
+const robotsUnknownRoot = await writeFixture('robots-unknown', robotsUnknownSnapshot);
+
 const completedSnapshot = structuredClone(demo);
 completedSnapshot.cutoffExclusive = completedSnapshot.periodEndExclusive;
 completedSnapshot.isYearToDate = false;
@@ -95,6 +100,7 @@ const origins = {
   zero: { port: 4179, root: zeroRoot, demo: true, base: '' },
   robotsZero: { port: 4180, root: robotsZeroRoot, demo: true, base: '' },
   legacyV1: { port: 4181, root: await writeFixture('legacy-v1', legacyV1), demo: true, base: '' },
+  robotsUnknown: { port: 4182, root: robotsUnknownRoot, demo: true, base: '' },
 };
 
 const builds: Record<string, string> = {};

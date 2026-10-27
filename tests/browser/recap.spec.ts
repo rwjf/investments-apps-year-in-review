@@ -38,6 +38,10 @@ test('half a book stays approximate and keeps its exact line total nearby', asyn
 test('zero added lines is honest and does not draw a fake book stack', async ({ page }) => {
   scenario('zero');
   await page.goto('/');
+  const lead = page.locator('#code-added .scale-moment__intro');
+  await expect(lead).toContainText('No lines added');
+  await expect(lead).toContainText('No book stack');
+  await expect(lead).not.toContainText(/very big book|wildly oversized/i);
   await expect(page.getByTestId('book-result')).toContainText(/zero .*book/i);
   await expect(page.locator('.book-illustration')).toHaveCount(0);
   await expect(page.getByTestId('code-added-total')).toContainText('0');
@@ -46,6 +50,9 @@ test('zero added lines is honest and does not draw a fake book stack', async ({ 
 test('unavailable code totals do not produce a book claim', async ({ page }) => {
   scenario('unavailable');
   await page.goto('/');
+  const lead = page.locator('#code-added .scale-moment__intro');
+  await expect(lead).toContainText(/code count\s*is unavailable/i);
+  await expect(lead).not.toContainText(/War and Peace|very big book|wildly oversized|book.{0,30}(?:fill|equiv|estimate)/i);
   await expect(page.getByTestId('code-added-total')).toContainText('Not available');
   await expect(page.locator('[data-testid="book-result"]')).toHaveCount(0);
   await expect(page.locator('#code-added')).not.toContainText(/War and Peace|about \d|book equivalent/i);
@@ -73,6 +80,18 @@ test('zero merged pull requests never invent a bot percentage', async ({ page })
   await expect(page.getByRole('heading', { name: 'Welcoming our Robot Overlords', exact: true })).toBeVisible();
   await expect(page.getByTestId('bot-pr-share')).toContainText('0 of 0');
   await expect(page.getByTestId('bot-pr-share')).not.toContainText('%');
+});
+
+test('unknown PR authors withhold the exact bot count and share while stating the unknown total', async ({ page }) => {
+  scenario('robotsUnknown');
+  await page.goto('/');
+  const share = page.getByTestId('bot-pr-share');
+  await expect(share).toContainText('Exact share withheld');
+  await expect(share).toContainText('4 merged PRs');
+  await expect(share).toContainText('2 PR authors could not be classified');
+  await expect(share).toContainText('Exact bot count withheld');
+  await expect(share).not.toContainText(/\d+ of 4 merged PRs were bot-authored/);
+  await expect(share).not.toContainText('%');
 });
 
 test('limited source visibility carries a plain-language coverage caveat', async ({ page }) => {
@@ -138,6 +157,9 @@ test('content remains available without scripts and all requests stay local', as
   await methodDetails.locator('summary').click();
   await expect(methodDetails).toHaveAttribute('open', '');
   await expect(methodDetails).toContainText('not unique human-written code');
+  await expect(methodDetails).toContainText(/recognizable lockfiles.*vendored.*generated.*minified.*build/i);
+  await expect(methodDetails).toContainText(/cannot catch every generated file/i);
+  await expect(methodDetails).toContainText(/documentation, tests, and config files may remain/i);
   await context.close();
 });
 

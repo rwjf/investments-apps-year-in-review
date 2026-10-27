@@ -10,12 +10,28 @@ interface Props {
 
 const { yearLabel, linesAdded, linesRemoved } = Astro.props;
 const number = (value: number) => new Intl.NumberFormat('en-US').format(value);
+const hasAddedLines = linesAdded.status === 'available' && linesAdded.count > 0;
+const addedLinesAreZero = linesAdded.status === 'available' && linesAdded.count === 0;
 ---
 <section class="scale-moment" id="code-added" aria-labelledby="page-title">
   <div class="scale-moment__intro">
     <p class="eyebrow">A team recap · {yearLabel}</p>
-    <h1 id="page-title">A little code.<br /><em>A very big book.</em></h1>
-    <p class="scale-moment__description">A wildly oversized book comparison for an even bigger year. The exact line total and the assumptions behind it are right here.</p>
+    {hasAddedLines ? (
+      <>
+        <h1 id="page-title">A little code.<br /><em>A very big book.</em></h1>
+        <p class="scale-moment__description">A wildly oversized book comparison for an even bigger year. The exact line total and the assumptions behind it are right here.</p>
+      </>
+    ) : addedLinesAreZero ? (
+      <>
+        <h1 id="page-title">No lines added.<br /><em>No book stack.</em></h1>
+        <p class="scale-moment__description">The added-line count is zero, so this page leaves the book on the shelf. The rest of the year still has stories.</p>
+      </>
+    ) : (
+      <>
+        <h1 id="page-title">The code count<br /><em>is unavailable.</em></h1>
+        <p class="scale-moment__description">No book comparison until a complete added-line total is available. The rest of the year still has stories.</p>
+      </>
+    )}
   </div>
 
   <BookScale linesAdded={linesAdded} />

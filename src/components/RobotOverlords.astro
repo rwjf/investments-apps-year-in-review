@@ -8,8 +8,9 @@ interface Props {
 const { metrics } = Astro.props;
 const merged = metrics.mergedPullRequests;
 const bots = metrics.botAuthoredPullRequests;
+const unknownAuthors = metrics.unknownAuthorPullRequests;
 const share = merged.status === 'available' && bots.status === 'available'
-  && metrics.unknownAuthorPullRequests === 0
+  && unknownAuthors === 0
   ? botShare(bots.count, merged.count)
   : null;
 const number = (value: number) => new Intl.NumberFormat('en-US').format(value);
@@ -25,13 +26,34 @@ const percent = share === null ? null : `${Math.round(share * 100)}%`;
 
   <div class="robot-overlords__readout" data-testid="bot-pr-share" aria-label="Bot-authored merged pull request count and share">
     <p class="robot-overlords__percentage">{percent ?? '—'}</p>
-    <p class="robot-overlords__share-caption">{share === null ? 'No exact share available' : 'of merged pull requests'}</p>
-    <p class="robot-overlords__counts">
-      <strong>{bots.status === 'available' ? number(bots.count) : 'Not available'} of {merged.status === 'available' ? number(merged.count) : 'Not available'}</strong>
-      <span>merged PRs were bot-authored</span>
+    <p class="robot-overlords__share-caption">
+      {share !== null ? 'of merged pull requests' : unknownAuthors > 0 ? 'Exact share withheld' : 'No exact share available'}
     </p>
-    {share === null && (
-      <p class="robot-overlords__unknown">A percentage needs at least one merged PR, a known bot count, and classifiable authors.</p>
+    {unknownAuthors > 0 ? (
+      <>
+        <p class="robot-overlords__counts"><strong>Exact bot count withheld</strong></p>
+        <p class="robot-overlords__counts">
+          <strong>{merged.status === 'available' ? `${number(merged.count)} merged PRs` : 'Merged PR total unavailable'}</strong>
+        </p>
+        <p class="robot-overlords__unknown">{number(unknownAuthors)} PR authors could not be classified. The exact bot count and share are withheld.</p>
+      </>
+    ) : bots.status === 'available' && merged.status === 'available' ? (
+      <p class="robot-overlords__counts">
+        <strong>{number(bots.count)} of {number(merged.count)}</strong>
+        <span>merged PRs were bot-authored</span>
+      </p>
+    ) : (
+      <>
+        <p class="robot-overlords__counts">
+          <strong>{bots.status === 'available' ? `${number(bots.count)} bot-authored PRs` : 'Bot-authored PR count unavailable'}</strong>
+        </p>
+        <p class="robot-overlords__unknown">
+          {merged.status === 'available' ? `${number(merged.count)} merged PRs in total.` : 'Merged PR total unavailable.'}
+          {merged.status === 'available' && merged.count === 0
+            ? ' A percentage needs at least one merged PR.'
+            : ' An exact share needs available counts and classifiable authors.'}
+        </p>
+      </>
     )}
   </div>
 
