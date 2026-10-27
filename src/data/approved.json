@@ -1,12 +1,12 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "mode": "real",
   "year": 2026,
   "timezone": "America/New_York",
   "periodStart": "2026-01-01T05:00:00.000Z",
   "periodEndExclusive": "2027-01-01T05:00:00.000Z",
   "cutoffExclusive": "2026-10-27T17:28:51.121Z",
-  "collectedAt": "2026-10-27T17:28:51.121Z",
+  "collectedAt": "2026-10-27T18:44:10.171Z",
   "isYearToDate": true,
   "metrics": {
     "dependencyAlertsFixed": {
@@ -113,5 +113,25 @@
     "notes": [
       "Limited to accessible sources; independent organization inventory or project visibility was not verified."
     ]
+  },
+  "playful": {
+    "methodologyVersion": "known-generated-v1",
+    "mergedPullRequests": {
+      "status": "available",
+      "count": 219
+    },
+    "linesAdded": {
+      "status": "available",
+      "count": 360076
+    },
+    "linesRemoved": {
+      "status": "available",
+      "count": 101297
+    },
+    "botAuthoredPullRequests": {
+      "status": "available",
+      "count": 12
+    },
+    "unknownAuthorPullRequests": 0
   }
 }

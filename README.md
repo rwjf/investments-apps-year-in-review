@@ -2,7 +2,7 @@
 
 A static, public-friendly recap of the team's 2026 work. The website contains reviewed aggregate counts—not source records, people, repository names, or issue details.
 
-**Current status:** a real 2026 snapshot has been collected through Jira MCP and GitHub, reviewed, and approved for the local preview with a visible limited-coverage caveat. Complete organization-wide visibility has not been independently established, and nothing has been publicly deployed. The separate bundled demo remains illustrative.
+**Current status:** the comparison-led Delightful scale preview uses a reviewed real 2026 snapshot from Jira MCP and GitHub, including filtered code changes, book-equivalents, and bot-authored PRs, with a visible limited-coverage caveat. Complete organization-wide visibility has not been independently established, and nothing has been publicly deployed. The separate bundled demo remains illustrative.
 
 ## Preview the example
 
