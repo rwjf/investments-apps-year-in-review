@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "mode": "demo",
+  "year": 2026,
+  "timezone": "America/New_York",
+  "periodStart": "2026-01-01T05:00:00.000Z",
+  "periodEndExclusive": "2027-01-01T05:00:00.000Z",
+  "cutoffExclusive": "2026-10-27T16:00:00.000Z",
+  "collectedAt": "2026-10-27T16:00:00.000Z",
+  "isYearToDate": true,
+  "metrics": {
+    "dependencyAlertsFixed": { "status": "unavailable", "count": null, "breakdown": [] },
+    "productionDeployments": { "status": "unavailable", "count": null, "breakdown": [] },
+    "workItemsClosed": { "status": "unavailable", "count": null, "breakdown": [] }
+  },
+  "coverage": {
+    "scope": "accessible-repositories",
+    "notes": ["Illustrative example only; no source data was collected."]
+  }
+}

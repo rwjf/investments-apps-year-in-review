@@ -1,0 +1,23 @@
+{
+  "name": "year-in-review",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "vitest run tests/recap",
+    "check": "astro check"
+  },
+  "dependencies": {
+    "luxon": "3.7.2",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "@astrojs/check": "0.9.4",
+    "@types/luxon": "3.7.1",
+    "astro": "5.13.5",
+    "typescript": "5.9.2",
+    "vitest": "3.2.4"
+  }
+}
