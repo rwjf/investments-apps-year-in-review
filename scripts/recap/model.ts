@@ -30,7 +30,7 @@ export interface DeploymentRecord {
   statuses: { state: string; createdAt: string }[];
 }
 
-export type CoverageIssueReason = 'denied' | 'failed' | 'inaccessible' | 'pagination' | 'inventory';
+export type CoverageIssueReason = 'denied' | 'failed' | 'inaccessible' | 'pagination' | 'inventory' | 'mapping';
 
 export interface CoverageIssue {
   source: string;
@@ -53,4 +53,35 @@ export interface CoverageReport {
 export interface CollectionResult<T> {
   records: T[];
   coverage: CoverageReport;
+}
+
+export interface SourceRequest {
+  source: 'github' | 'jira';
+  method: 'GET' | 'POST';
+  path: string;
+  body?: Record<string, unknown>;
+}
+
+export interface SourceResponse {
+  status: number;
+  headers: Record<string, string>;
+  body: unknown;
+}
+
+export interface CollectorConfig {
+  organization: 'rwjf';
+  projects: ['INSUP', 'RWJFINVEST'];
+  year: 2026;
+  timezone: 'America/New_York';
+  productionEnvironments: ['Prod', 'Production'];
+  jiraExclusions: {
+    issueTypeIds: string[];
+    resolutionIds: string[];
+    confirmed: boolean;
+  };
+  /** Private, independently reviewed repository inventory and/or Jira visibility attestation. */
+  inventoryPath?: string;
+  jiraBaseUrl?: string;
+  transport?: (request: SourceRequest) => Promise<SourceResponse>;
+  sleep?: (milliseconds: number) => Promise<void>;
 }
