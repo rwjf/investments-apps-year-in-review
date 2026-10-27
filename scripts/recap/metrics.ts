@@ -1,6 +1,6 @@
 import type { PublicSnapshot } from '../../src/data/schema';
-import type { AlertRecord, IssueRecord, Period } from './model';
-import { withinPeriod } from './period';
+import type { AlertRecord, DeploymentRecord, IssueRecord, Period } from './model';
+import { monthKey, withinPeriod } from './period';
 
 const WORK_TYPES = ['Task', 'Story', 'Bug', 'Subtask', 'Other'] as const;
 const SEVERITIES = ['Critical', 'High', 'Medium', 'Low', 'Unknown'] as const;
@@ -91,4 +91,47 @@ export function countDependencyFixes(
   }
 
   return aggregate(counts, SEVERITIES);
+}
+
+export function countProductionDeployments(
+  records: DeploymentRecord[],
+  period: Period,
+  environments: string[],
+): PublicSnapshot['metrics']['productionDeployments'] {
+  const allowedEnvironments = new Set(environments.map((name) => name.trim().toLowerCase()));
+  const successes = new Map<string, string[]>();
+
+  for (const record of records) {
+    if (!allowedEnvironments.has(record.environment.trim().toLowerCase())) continue;
+
+    const key = JSON.stringify([record.repositoryId, record.id]);
+    const timestamps = successes.get(key) ?? [];
+    for (const status of record.statuses) {
+      if (status.state === 'success') timestamps.push(status.createdAt);
+    }
+    if (timestamps.length > 0) successes.set(key, timestamps);
+  }
+
+  const year = monthKey(period.start, period).slice(0, 4);
+  const counts = new Map<string, number>(Array.from({ length: 12 }, (_, index) => [
+    `${year}-${String(index + 1).padStart(2, '0')}`, 0,
+  ] as const));
+
+  // Merge every duplicate history before filtering: a prior-year first success must not be recounted.
+  for (const timestamps of successes.values()) {
+    const firstSuccess = timestamps.reduce((earliest, timestamp) => (
+      Date.parse(timestamp) < Date.parse(earliest) ? timestamp : earliest
+    ));
+    if (!withinPeriod(firstSuccess, period)) continue;
+
+    const label = monthKey(firstSuccess, period);
+    counts.set(label, (counts.get(label) ?? 0) + 1);
+  }
+
+  const breakdown = Array.from(counts, ([label, count]) => ({ label, count }));
+  return {
+    status: 'available',
+    count: breakdown.reduce((total, item) => total + item.count, 0),
+    breakdown,
+  };
 }
