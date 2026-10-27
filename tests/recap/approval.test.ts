@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process';
-import { cp, mkdtemp, mkdir, readFile, rm, symlink, unlink, writeFile } from 'node:fs/promises';
+import { cp, mkdtemp, mkdir, readFile, readdir, rm, symlink, unlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -158,18 +158,30 @@ describe('explicit approval and static build gate', () => {
     expect((await loadBuildSnapshot({ root, allowDemo: true })).mode).toBe('demo');
   });
 
-  it('gates the CLI before Astro, ignores inherited demo flags, and builds explicit demo without pages', async () => {
+  it.each(['demo', 'real'] as const)('gates the CLI and renders a bundled %s snapshot from an unrelated cwd', async (mode) => {
     const root = await setup();
     await cp(new URL('../../scripts/recap/', import.meta.url), join(root, 'scripts/recap'), { recursive: true });
     await cp(new URL('../../src/data/schema.ts', import.meta.url), join(root, 'src/data/schema.ts'));
     await symlink(fileURLToPath(new URL('../../node_modules', import.meta.url)), join(root, 'node_modules'), 'dir');
     await writeFile(join(root, 'package.json'), '{"type":"module"}');
+    await mkdir(join(root, 'src/pages'));
+    await writeFile(join(root, 'src/pages/index.astro'), `---
+import { loadBuildSnapshot } from '../../scripts/recap/build-input';
+const snapshot = await loadBuildSnapshot({ allowDemo: process.env.RECAP_ALLOW_DEMO === '1' });
+---
+<p>{snapshot.mode}</p>
+`);
+    const privateMarker = 'FAKE_CREDENTIAL_fixture_private_only';
+    const coveragePath = join(root, '.recap-private/coverage.json');
+    const report = JSON.parse(await readFile(coveragePath, 'utf8'));
+    report.metrics.workItemsClosed.sourceChecks[0].source = privateMarker;
+    await writeFile(coveragePath, JSON.stringify(report));
     const run = promisify(execFile);
     const runner = fileURLToPath(new URL('../../node_modules/tsx/dist/cli.mjs', import.meta.url));
     const invoke = async (script: string, args: string[] = []) => {
       try {
         const output = await run(process.execPath, [runner, join(root, 'scripts/recap', script), ...args], {
-          cwd: tmpdir(), env: { ...process.env, RECAP_ALLOW_DEMO: '1' }, timeout: 30000,
+          cwd: tmpdir(), env: { ...process.env, RECAP_ALLOW_DEMO: '1', RECAP_BUILD_ROOT: tmpdir() }, timeout: 30000,
         });
         return { code: 0, text: output.stdout + output.stderr };
       } catch (error) {
@@ -183,15 +195,28 @@ describe('explicit approval and static build gate', () => {
     expect(refused.text).not.toContain('[build]');
     expect((await invoke('approve.ts')).code).toBe(1);
     expect((await invoke('collect.ts', ['--year', 'invalid'])).code).toBe(1);
-    const demo = await invoke('build-input.ts', ['--demo']);
-    expect(demo.code).toBe(0);
-    expect(demo.text).toMatch(/DEMO BUILD.*ILLUSTRATIVE ONLY/);
-    expect(demo.text).toMatch(/0 page\(s\) built/);
-    await expect(readFile(join(root, 'src/data/approved.json'))).rejects.toThrow();
-    const approved = await invoke('approve.ts', ['--confirm-reviewed']);
-    expect(approved.code).toBe(0);
-    const real = await invoke('build-input.ts');
-    expect(real.code).toBe(0);
-    expect(real.text).not.toContain('DEMO BUILD');
+    if (mode === 'real') {
+      const approved = await invoke('approve.ts', ['--confirm-reviewed']);
+      expect(approved.code).toBe(0);
+    }
+    const built = await invoke('build-input.ts', mode === 'demo' ? ['--demo'] : []);
+    expect(built, built.text).toMatchObject({ code: 0 });
+    expect(built.text).toMatch(/1 page\(s\) built/);
+    expect(await readFile(join(root, 'dist/index.html'), 'utf8')).toContain(`<p>${mode}</p>`);
+    if (mode === 'demo') {
+      expect(built.text).toMatch(/DEMO BUILD.*ILLUSTRATIVE ONLY/);
+      await expect(readFile(join(root, 'src/data/approved.json'))).rejects.toThrow();
+    } else {
+      expect(built.text).not.toContain('DEMO BUILD');
+    }
+    const output = await readdir(join(root, 'dist'), { recursive: true, withFileTypes: true });
+    for (const entry of output) {
+      expect(entry.name).not.toMatch(/\.recap-private|candidate\.json|coverage\.json|approval\.json/);
+      if (entry.isFile()) {
+        const content = await readFile(join(entry.parentPath, entry.name), 'utf8');
+        expect(content).not.toContain(privateMarker);
+        expect(content).not.toContain(root);
+      }
+    }
   }, 30000);
 });
