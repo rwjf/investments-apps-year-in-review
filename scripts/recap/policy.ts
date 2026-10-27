@@ -15,12 +15,17 @@ const coverageSchema = z.object({
     status: z.enum(['success', 'empty', 'disabled', 'denied', 'failed']) }).strict()),
 }).strict();
 const hashSchema = z.string().regex(/^[a-f0-9]{64}$/);
-export const ReviewReportSchema = z.object({
+export const ReviewReportV1Schema = z.object({
   schemaVersion: z.literal(1), candidateHash: hashSchema, jiraExclusionsConfirmed: z.boolean(),
   metrics: z.object({ dependencyAlertsFixed: coverageSchema, productionDeployments: coverageSchema,
     workItemsClosed: coverageSchema }).strict(),
 }).strict();
+export const ReviewReportV2Schema = ReviewReportV1Schema.extend({
+  schemaVersion: z.literal(2), playfulCoverage: coverageSchema,
+}).strict();
+export const ReviewReportSchema = z.union([ReviewReportV1Schema, ReviewReportV2Schema]);
 export type ReviewReport = z.infer<typeof ReviewReportSchema>;
+export type VersionedReviewReport = ReviewReport;
 
 export const ReceiptSchema = z.object({
   schemaVersion: z.literal(1), confirmReviewed: z.literal(true), acknowledgeAccessibleScope: z.boolean(),
@@ -36,9 +41,9 @@ export function readableCoverage(coverage: CoverageReport): boolean {
     && (coverage.complete || coverage.issues.length > 0);
 }
 
-export function publicCoverage(metrics: ReviewReport['metrics']): PublicSnapshot['coverage'] {
-  const verified = METRIC_KEYS.every((key) => metrics[key].complete && metrics[key].inventoryVerified
-    && metrics[key].issues.length === 0);
+export function publicCoverage(metrics: ReviewReport['metrics'], playfulCoverage?: CoverageReport): PublicSnapshot['coverage'] {
+  const coverage = [...METRIC_KEYS.map((key) => metrics[key]), ...(playfulCoverage ? [playfulCoverage] : [])];
+  const verified = coverage.every((entry) => entry.complete && entry.inventoryVerified && entry.issues.length === 0);
   return verified ? { scope: 'verified-organization', notes: [] }
     : { scope: 'accessible-repositories', notes: [ACCESSIBLE_SCOPE_NOTE] };
 }
@@ -75,13 +80,24 @@ export function parseCuratedSnapshot(value: unknown): PublicSnapshot {
 export function validateReviewInputs(candidateText: string, coverageText: string, acknowledge: boolean): PublicSnapshot {
   const snapshot = parseCuratedSnapshot(JSON.parse(candidateText));
   const report = ReviewReportSchema.parse(JSON.parse(coverageText));
-  if (snapshot.mode !== 'real' || report.candidateHash !== digest(candidateText)
+  if (snapshot.mode !== 'real' || snapshot.schemaVersion !== report.schemaVersion || report.candidateHash !== digest(candidateText)
     || !report.jiraExclusionsConfirmed) throw new Error('Invalid review inputs');
-  if (JSON.stringify(snapshot.coverage) !== JSON.stringify(publicCoverage(report.metrics))) {
+  if (JSON.stringify(snapshot.coverage) !== JSON.stringify(publicCoverage(report.metrics,
+    report.schemaVersion === 2 ? report.playfulCoverage : undefined))) {
     throw new Error('Coverage mismatch');
   }
   for (const key of METRIC_KEYS) {
     if (!readableCoverage(report.metrics[key]) || snapshot.metrics[key].status !== 'available') {
+      throw new Error('Required source is unavailable');
+    }
+  }
+  if (snapshot.schemaVersion === 2 && report.schemaVersion === 2) {
+    if (!readableCoverage(report.playfulCoverage)
+      || snapshot.playful.mergedPullRequests.status !== 'available'
+      || snapshot.playful.linesAdded.status !== 'available'
+      || snapshot.playful.linesRemoved.status !== 'available'
+      || snapshot.playful.botAuthoredPullRequests.status !== 'available'
+      || snapshot.playful.unknownAuthorPullRequests !== 0) {
       throw new Error('Required source is unavailable');
     }
   }

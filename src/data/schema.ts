@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { DateTime } from 'luxon';
+import { PlayfulMetricsSchema } from './playful';
 
 const timestampSchema = z.iso.datetime({ offset: true }).refine(
   (value) => Number.isFinite(Date.parse(value)),
@@ -37,7 +38,7 @@ const metricSchema = z.object({
   }
 });
 
-export const PublicSnapshotSchema = z.object({
+const snapshotBaseSchema = z.object({
   schemaVersion: z.literal(1),
   mode: z.enum(['demo', 'real']),
   year: z.number().int().min(1).max(9999),
@@ -56,7 +57,9 @@ export const PublicSnapshotSchema = z.object({
     scope: z.enum(['verified-organization', 'accessible-repositories']),
     notes: z.array(z.string()),
   }).strict(),
-}).strict().superRefine((snapshot, context) => {
+}).strict();
+
+function validatePeriod(snapshot: Omit<z.infer<typeof snapshotBaseSchema>, 'schemaVersion'>, context: z.RefinementCtx) {
   const start = Date.parse(snapshot.periodStart);
   const end = Date.parse(snapshot.periodEndExclusive);
   const cutoff = Date.parse(snapshot.cutoffExclusive);
@@ -81,6 +84,16 @@ export const PublicSnapshotSchema = z.object({
   if (snapshot.isYearToDate !== (cutoff < end)) {
     context.addIssue({ code: 'custom', path: ['isYearToDate'], message: 'Year-to-date flag must match the period cutoff' });
   }
-});
+}
 
+export const PublicSnapshotV1Schema = snapshotBaseSchema.superRefine(validatePeriod);
+export const PublicSnapshotV2Schema = snapshotBaseSchema.extend({
+  schemaVersion: z.literal(2),
+  playful: PlayfulMetricsSchema,
+}).superRefine(validatePeriod);
+
+export const PublicSnapshotSchema = z.union([PublicSnapshotV1Schema, PublicSnapshotV2Schema]);
+
+export type PublicSnapshotV1 = z.infer<typeof PublicSnapshotV1Schema>;
+export type PublicSnapshotV2 = z.infer<typeof PublicSnapshotV2Schema>;
 export type PublicSnapshot = z.infer<typeof PublicSnapshotSchema>;

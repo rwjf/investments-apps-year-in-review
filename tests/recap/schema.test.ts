@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PublicSnapshotSchema } from '../../src/data/schema';
-import demo from '../../src/data/demo.json';
+import demo from '../fixtures/snapshot-v1.json';
 
 function validDemo() {
   const metric = { status: 'available', count: 1, breakdown: [{ label: 'General', count: 1 }] };

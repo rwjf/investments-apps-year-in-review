@@ -9,6 +9,9 @@ import { collectSnapshot } from '../../scripts/recap/collect';
 import { approveSnapshot } from '../../scripts/recap/approve';
 import { loadBuildSnapshot } from '../../scripts/recap/build-input';
 import type { CoverageIssueReason, CoverageReport } from '../../scripts/recap/model';
+import { digest } from '../../scripts/recap/artifacts';
+import { publicCoverage, ReviewReportSchema, validateReviewInputs } from '../../scripts/recap/policy';
+import { v2Fixture } from '../fixtures/playful';
 
 const roots: string[] = [];
 const clean = (): CoverageReport => ({ complete: true, inventoryVerified: true, issues: [], sourceChecks: [{ source: 'private', status: 'empty' }] });
@@ -16,7 +19,7 @@ async function setup(reason?: CoverageIssueReason, confirmed = true) {
   const root = await mkdtemp(join(tmpdir(), 'recap approval '));
   roots.push(root);
   await mkdir(join(root, 'src/data'), { recursive: true });
-  await writeFile(join(root, 'src/data/demo.json'), await readFile(new URL('../../src/data/demo.json', import.meta.url)));
+  await writeFile(join(root, 'src/data/demo.json'), await readFile(new URL('../fixtures/snapshot-v1.json', import.meta.url)));
   await writeFile(join(root, 'recap.config.json'), JSON.stringify({ organization: 'rwjf', projects: ['INSUP', 'RWJFINVEST'], year: 2026,
     timezone: 'America/New_York', productionEnvironments: ['Prod', 'Production'],
     jiraExclusions: { issueTypeIds: [], resolutionIds: [], confirmed } }));
@@ -35,6 +38,88 @@ async function setup(reason?: CoverageIssueReason, confirmed = true) {
 afterEach(async () => { await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true }))); });
 
 describe('explicit approval and static build gate', () => {
+  it('requires a v2 report for v2 candidate bytes even with fully rebound v1 receipt hashes', async () => {
+    const root = await setup();
+    await approveSnapshot({ root, confirmReviewed: true });
+    const candidatePath = join(root, '.recap-private/candidate.json');
+    const candidate = JSON.parse(await readFile(candidatePath, 'utf8'));
+    candidate.schemaVersion = 2;
+    candidate.playful = v2Fixture().playful;
+    const text = JSON.stringify(candidate);
+    await writeFile(candidatePath, text);
+    await writeFile(join(root, 'src/data/approved.json'), text);
+    const reportPath = join(root, '.recap-private/coverage.json');
+    const report = JSON.parse(await readFile(reportPath, 'utf8'));
+    report.candidateHash = digest(text);
+    const reportText = JSON.stringify(report);
+    await writeFile(reportPath, reportText);
+    const receiptPath = join(root, '.recap-private/approval.json');
+    const receipt = JSON.parse(await readFile(receiptPath, 'utf8'));
+    await writeFile(receiptPath, JSON.stringify({ ...receipt, candidateHash: digest(text),
+      approvedHash: digest(text), coverageHash: digest(reportText) }));
+    await expect(loadBuildSnapshot({ root, allowDemo: false })).rejects.toThrow('Build blocked');
+    expect(() => validateReviewInputs(text, reportText, false)).toThrow('Invalid review inputs');
+  });
+
+  it('approves and loads v2 only with matching complete playful review coverage', async () => {
+    const root = await setup();
+    const candidatePath = join(root, '.recap-private/candidate.json');
+    const candidate = JSON.parse(await readFile(candidatePath, 'utf8'));
+    candidate.schemaVersion = 2;
+    candidate.playful = v2Fixture().playful;
+    const text = JSON.stringify(candidate);
+    await writeFile(candidatePath, text);
+    const reportPath = join(root, '.recap-private/coverage.json');
+    const report = JSON.parse(await readFile(reportPath, 'utf8'));
+    const v2Report = { ...report, schemaVersion: 2, candidateHash: digest(text), playfulCoverage: clean() };
+    expect(ReviewReportSchema.safeParse(v2Report).success).toBe(true);
+    await writeFile(reportPath, JSON.stringify(v2Report));
+    await approveSnapshot({ root, confirmReviewed: true });
+    expect(await loadBuildSnapshot({ root, allowDemo: false })).toEqual(candidate);
+    candidate.playful.linesAdded.count++;
+    await writeFile(join(root, 'src/data/approved.json'), JSON.stringify(candidate));
+    await expect(loadBuildSnapshot({ root, allowDemo: false })).rejects.toThrow('Build blocked');
+  });
+
+  it('incorporates playful coverage without broadening the inventory waiver', () => {
+    const metrics = { dependencyAlertsFixed: clean(), productionDeployments: clean(), workItemsClosed: clean() };
+    const coverage = clean();
+    coverage.inventoryVerified = false;
+    coverage.complete = false;
+    coverage.issues = [{ source: 'github-inventory', identifier: 'private', reason: 'inventory' }];
+    expect(publicCoverage(metrics, coverage).scope).toBe('accessible-repositories');
+    const snapshot = { ...v2Fixture(), mode: 'real', coverage: publicCoverage(metrics, coverage) };
+    const text = JSON.stringify(snapshot);
+    const report = { schemaVersion: 2, candidateHash: digest(text), jiraExclusionsConfirmed: true, metrics, playfulCoverage: coverage };
+    expect(() => validateReviewInputs(text, JSON.stringify(report), true)).not.toThrow();
+    expect(() => validateReviewInputs(text, JSON.stringify(report), false)).toThrow();
+    for (const reason of ['denied', 'failed', 'inaccessible', 'pagination', 'mapping'] as const) {
+      coverage.issues[0].reason = reason;
+      expect(() => validateReviewInputs(text, JSON.stringify(report), true)).toThrow();
+    }
+    coverage.issues[0].reason = 'inventory';
+    coverage.issues[0].source = 'github-prs';
+    expect(() => validateReviewInputs(text, JSON.stringify(report), true)).toThrow();
+  });
+
+  it('never approves unavailable playful scalars, unknown authors, or mismatched report versions', () => {
+    const snapshot = { ...v2Fixture(), mode: 'real', coverage: { scope: 'verified-organization', notes: [] } };
+    const metrics = { dependencyAlertsFixed: clean(), productionDeployments: clean(), workItemsClosed: clean() };
+    for (const field of ['mergedPullRequests', 'linesAdded', 'botAuthoredPullRequests'] as const) {
+      const candidate = structuredClone(snapshot);
+      candidate.playful[field] = { status: 'unavailable', count: null };
+      if (field === 'linesAdded') candidate.playful.linesRemoved = { status: 'unavailable', count: null };
+      if (field === 'botAuthoredPullRequests') candidate.playful.unknownAuthorPullRequests = 1;
+      const text = JSON.stringify(candidate);
+      const report = { schemaVersion: 2, candidateHash: digest(text), jiraExclusionsConfirmed: true, metrics, playfulCoverage: clean() };
+      expect(() => validateReviewInputs(text, JSON.stringify(report), true)).toThrow();
+    }
+    const { playful, ...v1 } = snapshot;
+    const text = JSON.stringify({ ...v1, schemaVersion: 1 });
+    expect(() => validateReviewInputs(text, JSON.stringify({ schemaVersion: 2, candidateHash: digest(text),
+      jiraExclusionsConfirmed: true, metrics, playfulCoverage: clean() }), true)).toThrow();
+  });
+
   it('requires explicit review and does not replace previous approved input on refusal', async () => {
     const root = await setup();
     await writeFile(join(root, 'src/data/approved.json'), 'prior');
@@ -162,6 +247,7 @@ describe('explicit approval and static build gate', () => {
     const root = await setup();
     await cp(new URL('../../scripts/recap/', import.meta.url), join(root, 'scripts/recap'), { recursive: true });
     await cp(new URL('../../src/data/schema.ts', import.meta.url), join(root, 'src/data/schema.ts'));
+    await cp(new URL('../../src/data/playful.ts', import.meta.url), join(root, 'src/data/playful.ts'));
     await symlink(fileURLToPath(new URL('../../node_modules', import.meta.url)), join(root, 'node_modules'), 'dir');
     await writeFile(join(root, 'package.json'), '{"type":"module"}');
     await mkdir(join(root, 'src/pages'));
