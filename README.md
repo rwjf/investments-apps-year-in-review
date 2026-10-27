@@ -2,7 +2,7 @@
 
 A static, public-friendly recap of the Investments Applications team's 2026 work. The website contains reviewed aggregate counts—not source records, people, repository names, or issue details.
 
-**Current status:** the comparison-led Delightful scale preview uses a reviewed real 2026 snapshot from Jira MCP and GitHub, including filtered code changes, book-equivalents, and bot-authored PRs, with a visible limited-coverage caveat. Complete organization-wide visibility has not been independently established, and nothing has been publicly deployed. The separate bundled demo remains illustrative.
+**Current status:** the comparison-led Delightful scale site is live at **https://rwjf.github.io/investments-apps-year-in-review/**, using the reviewed real 2026 snapshot with its visible limited-coverage caveat. Complete organization-wide visibility has not been independently established. The separate bundled demo remains illustrative.
 
 ## Preview the example
 
@@ -145,7 +145,15 @@ The output checker is defense in depth, not a guarantee that arbitrary content i
 
 ## Static deployment
 
-The simplest recipe is GitHub Pages with a local build and a `gh-pages` branch. No source collection runs in CI and no backend is deployed.
+The site is deployed on GitHub Pages from the `gh-pages` branch of **rwjf/investments-apps-year-in-review**. That public repository contains only the generated site files; source code and private review inputs remain local. The local `origin` points to this artifact-only deployment repository—do not push the source feature branch there. No source collection runs in CI and no backend is deployed.
+
+For future updates after collecting/reviewing/approving any new snapshot:
+
+```sh
+RECAP_BASE_PATH=/investments-apps-year-in-review/ npm run publish
+```
+
+This rebuilds and checks the approved real artifact before updating the site. Pages is already configured for `gh-pages` / root, with HTTPS. To restore a root-path local preview after publishing, run `RECAP_BASE_PATH=/ npm run build`; this does not change the public site.
 
 For a project site, set the exact repository subpath during build/publication:
 
@@ -183,4 +191,4 @@ The `--allow-demo` distribution check is for local sample validation only; the p
 
 Run collection, review, approval, and build again. Keep the candidate/report/receipt together locally for reproducibility. This first version intentionally supports 2026 only; adapting another year requires updating collection/configuration and canonical month policy together, not just changing the displayed heading.
 
-The implementation design and plan are under `docs/superpowers/`. No real data is bundled by default, and no public deployment is performed automatically.
+The implementation design and plan are under `docs/superpowers/`. The explicitly approved aggregate snapshot is versioned; raw source records and private review/approval files are not. No data collection or public deployment runs automatically.
