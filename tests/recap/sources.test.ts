@@ -151,6 +151,34 @@ describe('GitHub source collection', () => {
     expect(result.alerts.coverage.complete).toBe(true);
   });
 
+  it('retains waiting and earlier success across status pages without false incomplete coverage', async () => {
+    const routes = githubRoutes();
+    routes['/repos/rwjf/synthetic-1/deployments?per_page=100'] = ok([{ id: 21, environment: 'Prod' }]);
+    const path = '/repos/rwjf/synthetic-1/deployments/21/statuses?per_page=100';
+    routes[path] = ok([{ state: 'waiting', created_at: '2026-09-01T00:00:00Z' }], {
+      link: `<https://api.github.com${path}&page=2>; rel="next"`,
+    });
+    routes[`${path}&page=2`] = ok([{ state: 'success', created_at: '2026-01-01T06:00:00Z' }]);
+    const result = await collectGithub(config(fixture(routes).transport), period);
+    expect(result.deployments.records[0]?.statuses).toEqual([
+      { state: 'waiting', createdAt: '2026-09-01T00:00:00Z' },
+      { state: 'success', createdAt: '2026-01-01T06:00:00Z' },
+    ]);
+    expect(result.deployments.coverage.complete).toBe(true);
+    expect(result.deployments.coverage.issues).toEqual([]);
+  });
+
+  it('still rejects unknown deployment states as malformed histories', async () => {
+    const routes = githubRoutes();
+    routes['/repos/rwjf/synthetic-1/deployments?per_page=100'] = ok([{ id: 21, environment: 'Prod' }]);
+    const path = '/repos/rwjf/synthetic-1/deployments/21/statuses?per_page=100';
+    routes[path] = ok([{ state: 'unknown-synthetic-state', created_at: '2026-09-01T00:00:00Z' }]);
+    const result = await collectGithub(config(fixture(routes).transport), period);
+    expect(result.deployments.records).toEqual([]);
+    expect(result.deployments.coverage.complete).toBe(false);
+    expect(result.deployments.coverage.sourceChecks).toContainEqual({ source: path, status: 'failed' });
+  });
+
   it('validates payloads and refuses foreign pagination links', async () => {
     const routes = githubRoutes();
     routes['/orgs/rwjf/dependabot/alerts?state=fixed&per_page=100'] = ok([{ ...alert(1), fixed_at: 'bad' }]);

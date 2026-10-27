@@ -14,7 +14,8 @@ const alertSchema = z.object({
   security_vulnerability: z.object({ severity: z.enum(['low', 'medium', 'high', 'critical']) }),
 });
 const deploymentSchema = z.object({ id: sourceId, environment: z.string().min(1) });
-const statusSchema = z.object({ state: z.enum(['error', 'failure', 'inactive', 'in_progress', 'queued', 'pending', 'success']), created_at: sourceInstant });
+// Live REST histories also return waiting, despite its omission from the published state enum.
+const statusSchema = z.object({ state: z.enum(['error', 'failure', 'inactive', 'in_progress', 'queued', 'pending', 'success', 'waiting']), created_at: sourceInstant });
 const inventorySchema = z.object({
   repositoryIds: z.array(z.string().min(1)), historicalCoverageConfirmed: z.literal(true),
   jiraProjects: z.array(z.string()).optional(), jiraVisibilityConfirmed: z.boolean().optional(),
