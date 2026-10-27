@@ -39,6 +39,10 @@ The Delightful scale presentation divides filtered **added lines** by **40 lines
 
 The `known-generated-v1` policy is defined in `scripts/recap/code-policy.ts`. It excludes recognizable lockfiles, vendor/dependency directories, generated/minified output, and build artifacts by path. It does not claim to recognize every generated file. All intended file pages and their raw totals must reconcile before filtering; truncated/capped reads block approval rather than inflating a partial comparison.
 
+### The estimated coffee comparison
+
+The coffee card is explicitly an **estimate**, not measured intake or a Jira/GitHub metric. It assumes four developers averaging 150 mg of caffeine each per calendar day, a 150 mg / 250 ml coffee, and a 200-litre bathtub. It counts calendar dates in the approved snapshot interval and reporting timezone, including a partial final day but excluding an exact next-day midnight; it never uses the current machine date. The current 300-day snapshot produces 180 g of caffeine-equivalent, 300 litres of coffee-equivalent, or 1.5 reference bathtubs. Assumptions are centralized in `src/data/caffeine.ts`; approved source data and receipts remain unchanged.
+
 ## Add or refresh the playful metrics
 
 Start with a valid approved core snapshot and its local proof files. Then:

@@ -47,4 +47,4 @@
 - [x] One bounded designer lane can own the helper/component and focused checks without parallel shared-file writes.
 - [x] No changes to the previously approved data or collection architecture; existing specialist-led method retained.
 
-Plan pending user confirmation; implementation has not started.
+Completed after user confirmation. The designer implemented the helper/component and focused checks; parent reviewed the math, code, copy, and actual screenshot. Combined validation passed 382 unit/fixture tests, Astro checks (zero errors/warnings; one existing unrelated deprecation hint), approved real build/output inspection, and no-JS 320/375/1440 browser checks. All protected snapshot/receipt/configuration hashes were unchanged. No source collection or publication occurred.

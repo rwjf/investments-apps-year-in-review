@@ -4,6 +4,8 @@ import Layout from '../layouts/Layout.astro';
 import RecapChapter from '../components/RecapChapter.astro';
 import RobotOverlords from '../components/RobotOverlords.astro';
 import ScaleMoment from '../components/ScaleMoment.astro';
+import CoffeeScale from '../components/CoffeeScale.astro';
+import { estimateCaffeine } from '../data/caffeine';
 import { loadBuildSnapshot } from '../../scripts/recap/build-input';
 
 const snapshot = await loadBuildSnapshot({ allowDemo: process.env.RECAP_ALLOW_DEMO === '1' });
@@ -43,6 +45,9 @@ const bugWorkItems = workMetric.status === 'available'
 const yearLabel = snapshot.isYearToDate ? `${snapshot.year} so far` : `Calendar year ${snapshot.year}`;
 const coverageNote = snapshot.coverage.notes[0];
 const playful = snapshot.schemaVersion === 2 ? snapshot.playful : null;
+const caffeineEstimate = playful
+  ? estimateCaffeine({ periodStart: snapshot.periodStart, cutoffExclusive: snapshot.cutoffExclusive, timezone: snapshot.timezone })
+  : null;
 const securityChapterIndex = playful ? '04 · The fix-it file' : '01 · The fix-it file';
 const deploymentChapterIndex = playful ? '05 · The shipping log' : '02 · The shipping log';
 const workChapterIndex = playful ? '06 · The done list' : '03 · The done list';
@@ -90,6 +95,8 @@ const workDefinition = 'Completed work items during the reporting period, exclud
         <p>The work we moved forward, one fix, deployment, and completed item at a time.</p>
       </section>
     )}
+
+    {playful && caffeineEstimate && <CoffeeScale estimate={caffeineEstimate} />}
 
     {snapshot.mode === 'real' && snapshot.coverage.scope === 'accessible-repositories' && (
       <aside class="coverage-note" aria-label="Coverage limitation">

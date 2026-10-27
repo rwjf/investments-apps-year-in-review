@@ -32,6 +32,38 @@ test('sample recap leads with the book comparison and retains the team-wide stor
   await expect(page.getByRole('navigation', { name: 'Recap sections' }).getByRole('link')).toHaveCount(6);
 });
 
+test('coffee estimate is explicit, compact, and fits narrow and wide screens', async ({ page }) => {
+  scenario('sample');
+  await page.goto('/');
+
+  const estimate = page.getByTestId('coffee-scale');
+  await expect(page).toHaveTitle('Investments Apps Team Year in Review');
+  await expect(estimate.getByText('Estimated coffee equivalent')).toBeVisible();
+  await expect(page.getByTestId('caffeine-headline')).toHaveText('A bathtub and a half of coffee.');
+  await expect(page.getByTestId('caffeine-litres')).toHaveText('About 300 litres. Please continue using mugs.');
+  await expect(page.getByTestId('caffeine-total')).toContainText('180 g');
+  await expect(estimate.getByText('1.5×')).toBeVisible();
+  const method = estimate.locator('details');
+  await method.locator('summary').click();
+  await expect(method).toContainText('4 developers × 150 mg each per calendar day');
+  await expect(method).toContainText('150 mg per 250 ml coffee');
+  await expect(method).toContainText('200-litre bathtub');
+  await expect(method).toContainText('not a measure of anyone’s actual caffeine intake');
+
+  await expect(page.getByTestId('code-added-total')).toContainText('56,960');
+  await expect(page.getByTestId('code-removed-total')).toContainText('23,840');
+  await expect(page.locator('#security .chapter__count')).toHaveText('128');
+  await expect(page.locator('#deployments .chapter__count')).toHaveText('42');
+  await expect(page.locator('#work-items .chapter__count')).toHaveText('316');
+  await expect(page.locator('#deployments')).not.toContainText('Prod or Production');
+
+  for (const width of [320, 375, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await expect(estimate).toBeVisible();
+  }
+});
+
 test('half a book stays approximate and keeps its exact line total nearby', async ({ page }) => {
   scenario('half');
   await page.goto('/');
@@ -156,6 +188,9 @@ test('content remains available without scripts and all requests stay local', as
   await expect(page.locator('a[href*="github.com"], a[href*="atlassian.net"], a[href*="jira"]')).toHaveCount(0);
   await expect(page.locator('script')).toHaveCount(0);
   await expect(page.getByTestId('book-result')).toContainText(/about 1 .*War and Peace/i);
+  await expect(page.getByTestId('caffeine-headline')).toHaveText('A bathtub and a half of coffee.');
+  await expect(page.getByTestId('caffeine-litres')).toContainText('About 300 litres');
+  await expect(page.getByTestId('caffeine-total')).toContainText('180 g');
   const methodDetails = page.locator('.book-scale__details');
   await expect(methodDetails).not.toHaveAttribute('open', '');
   await methodDetails.locator('summary').click();
