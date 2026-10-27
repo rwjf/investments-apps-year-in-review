@@ -2,6 +2,8 @@
 
 A static, public-friendly recap of the team's 2026 work. The website contains reviewed aggregate counts—not source records, people, repository names, or issue details.
 
+**Current status:** the demo and fixture-backed implementation have been verified locally. Real Jira credentials and mappings, complete source coverage, and an actual public deployment still need validation. The bundled example is not real team data.
+
 ## Preview the example
 
 Requires Node.js **22.23.4 or newer** and npm.
