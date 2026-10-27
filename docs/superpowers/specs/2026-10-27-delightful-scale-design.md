@@ -1,6 +1,6 @@
 # Delightful scale — playful recap expansion
 
-Status: design for user approval. This extends the working site; it does not replace the source/privacy architecture. No v2 product implementation has begun.
+Status: approved by the user on October 27, 2026 after a builder check found no blocking gaps. This extends the working site; it does not replace the source/privacy architecture. No v2 product implementation has begun.
 
 ## Intent
 
