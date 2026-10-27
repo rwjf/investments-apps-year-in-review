@@ -6,6 +6,10 @@ test('sample recap leads with the book comparison and retains the team-wide stor
   scenario('sample');
   await page.goto('/');
 
+  await expect(page).toHaveTitle('Investments Apps Team Year in Review');
+  await expect(page.locator('.site-name')).toHaveText('Investments Apps Team Year in Review');
+  await expect(page.locator('.scale-moment__intro .eyebrow')).toContainText('Investments Apps Team');
+  await expect(page.locator('#deployments')).not.toContainText('Prod or Production');
   await expect(page.locator('meta[name="recap-mode"]')).toHaveAttribute('content', 'demo');
   await expect(page.locator('.scale-moment__intro .eyebrow')).toContainText('2026 so far');
   await expect(page.getByLabel('Illustrative data warning')).toContainText('Illustrative example only; no source data was collected.');

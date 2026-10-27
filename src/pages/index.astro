@@ -48,18 +48,18 @@ const deploymentChapterIndex = playful ? '05 · The shipping log' : '02 · The s
 const workChapterIndex = playful ? '06 · The done list' : '03 · The done list';
 
 const dependencyDefinition = 'Dependabot dependency alerts marked fixed during the reporting period. Dismissed alerts are not counted; this is not a count of all security alerts.';
-const deploymentDefinition = 'Successful deployments to Prod or Production environments, grouped by the month of first success.';
+const deploymentDefinition = 'Successful production deployments, grouped by the month of first success.';
 const workDefinition = 'Completed work items during the reporting period, excluding epics and canceled or duplicate work.';
 ---
 <Layout
-  title={`Team year in review · ${snapshot.year}`}
-  description={`A playful, aggregate-only recap of selected team activity for ${yearLabel}.`}
+  title="Investments Apps Team Year in Review"
+  description={`A playful year in review for the Investments Applications team: ${yearLabel}.`}
   mode={snapshot.mode}
 >
   <header class="site-header">
     <div class="site-header__inner">
-      <a class="site-name" href="#top" aria-label="Team year in review, back to top">
-        <span class="site-name__accent" aria-hidden="true"></span>Team year in review
+      <a class="site-name" href="#top" aria-label="Investments Apps Team Year in Review, back to top">
+        <span class="site-name__accent" aria-hidden="true"></span>Investments Apps Team Year in Review
       </a>
       <nav class="section-nav" aria-label="Recap sections">
         {playful && <a href="#code-added">Code added</a>}
@@ -85,7 +85,7 @@ const workDefinition = 'Completed work items during the reporting period, exclud
       <ScaleMoment yearLabel={yearLabel} linesAdded={playful.linesAdded} linesRemoved={playful.linesRemoved} />
     ) : (
       <section class="v1-intro" aria-labelledby="page-title">
-        <p class="eyebrow">A team recap · {snapshot.year}</p>
+        <p class="eyebrow">Investments Apps Team · {snapshot.year}</p>
         <h1 id="page-title">A year of shared work.<br /><em>{yearLabel}.</em></h1>
         <p>The work we moved forward, one fix, deployment, and completed item at a time.</p>
       </section>
@@ -155,7 +155,7 @@ const workDefinition = 'Completed work items during the reporting period, exclud
     )}
 
     <footer class="site-footer">
-      <p>A shared view of recorded work. Each measure counts a different kind of activity; none is a score.</p>
+      <p>A shared view of the Investments Applications team’s recorded work. Each measure counts a different kind of activity; none is a score.</p>
       <p>Reporting timezone: America/New_York · {snapshot.isYearToDate ? 'Year to date' : `Calendar year ${snapshot.year}`} · The cutoff is exclusive. · Collected: {collectedLabel}</p>
       <p>Reporting cutoff (exclusive): {cutoffLabel}. Source availability is limited to the accessible scope described above.</p>
     </footer>

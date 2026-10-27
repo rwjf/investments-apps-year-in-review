@@ -61,7 +61,8 @@ a:focus-visible, button:focus-visible, summary:focus-visible { outline: 3px soli
   margin-inline: auto;
 }
 .site-name {
-  flex: 0 0 auto;
+  flex: 0 1 auto;
+  min-width: 0;
   color: var(--blue);
   font-size: 0.77rem;
   font-weight: 800;
