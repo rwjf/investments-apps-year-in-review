@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const timestampSchema = z.string().datetime({ offset: true }).refine(
+const timestampSchema = z.iso.datetime({ offset: true }).refine(
   (value) => Number.isFinite(Date.parse(value)),
   'Expected a valid ISO timestamp',
 );
@@ -17,22 +17,22 @@ const metricSchema = z.object({
 }).strict().superRefine((metric, context) => {
   if (metric.status === 'unavailable') {
     if (metric.count !== null) {
-      context.addIssue({ code: z.ZodIssueCode.custom, path: ['count'], message: 'Unavailable counts must be null' });
+      context.addIssue({ code: 'custom', path: ['count'], message: 'Unavailable counts must be null' });
     }
     if (metric.breakdown.length > 0) {
-      context.addIssue({ code: z.ZodIssueCode.custom, path: ['breakdown'], message: 'Unavailable metrics cannot include a breakdown' });
+      context.addIssue({ code: 'custom', path: ['breakdown'], message: 'Unavailable metrics cannot include a breakdown' });
     }
     return;
   }
 
   if (metric.count === null) {
-    context.addIssue({ code: z.ZodIssueCode.custom, path: ['count'], message: 'Available counts cannot be null' });
+    context.addIssue({ code: 'custom', path: ['count'], message: 'Available counts cannot be null' });
     return;
   }
 
   const breakdownTotal = metric.breakdown.reduce((total, item) => total + item.count, 0);
   if (breakdownTotal !== metric.count) {
-    context.addIssue({ code: z.ZodIssueCode.custom, path: ['breakdown'], message: 'Breakdown counts must reconcile to the metric count' });
+    context.addIssue({ code: 'custom', path: ['breakdown'], message: 'Breakdown counts must reconcile to the metric count' });
   }
 });
 
@@ -60,10 +60,10 @@ export const PublicSnapshotSchema = z.object({
   const end = Date.parse(snapshot.periodEndExclusive);
   const cutoff = Date.parse(snapshot.cutoffExclusive);
   if (!(start < end && cutoff >= start && cutoff <= end)) {
-    context.addIssue({ code: z.ZodIssueCode.custom, path: ['cutoffExclusive'], message: 'Period boundaries must be ordered and cutoff must be within the period' });
+    context.addIssue({ code: 'custom', path: ['cutoffExclusive'], message: 'Period boundaries must be ordered and cutoff must be within the period' });
   }
   if (snapshot.isYearToDate !== (cutoff < end)) {
-    context.addIssue({ code: z.ZodIssueCode.custom, path: ['isYearToDate'], message: 'Year-to-date flag must match the period cutoff' });
+    context.addIssue({ code: 'custom', path: ['isYearToDate'], message: 'Year-to-date flag must match the period cutoff' });
   }
 });
 
