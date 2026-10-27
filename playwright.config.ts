@@ -6,7 +6,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
 import demo from './src/data/demo.json' with { type: 'json' };
-import type { PublicSnapshot } from './src/data/schema';
+import legacyV1 from './tests/fixtures/snapshot-v1.json' with { type: 'json' };
+import type { PublicSnapshotV2 } from './src/data/schema';
 
 const execFile = promisify(execFileCallback);
 const repo = process.cwd();
@@ -20,11 +21,26 @@ async function writeFixture(name: string, snapshot: unknown) {
   return root;
 }
 
-const unavailableSnapshot = structuredClone(demo) as unknown as PublicSnapshot;
-for (const key of Object.keys(unavailableSnapshot.metrics) as (keyof PublicSnapshot['metrics'])[]) {
+const unavailableSnapshot = structuredClone(demo) as unknown as PublicSnapshotV2;
+for (const key of Object.keys(unavailableSnapshot.metrics) as (keyof PublicSnapshotV2['metrics'])[]) {
   unavailableSnapshot.metrics[key] = { status: 'unavailable', count: null, breakdown: [] };
 }
+unavailableSnapshot.playful.linesAdded = { status: 'unavailable', count: null };
+unavailableSnapshot.playful.linesRemoved = { status: 'unavailable', count: null };
 const unavailableRoot = await writeFixture('unavailable', unavailableSnapshot);
+
+const halfSnapshot = structuredClone(demo) as unknown as PublicSnapshotV2;
+halfSnapshot.playful.linesAdded = { status: 'available', count: 28_480 };
+const halfRoot = await writeFixture('book-half', halfSnapshot);
+
+const zeroSnapshot = structuredClone(demo) as unknown as PublicSnapshotV2;
+zeroSnapshot.playful.linesAdded = { status: 'available', count: 0 };
+const zeroRoot = await writeFixture('book-zero', zeroSnapshot);
+
+const robotsZeroSnapshot = structuredClone(demo) as unknown as PublicSnapshotV2;
+robotsZeroSnapshot.playful.mergedPullRequests = { status: 'available', count: 0 };
+robotsZeroSnapshot.playful.botAuthoredPullRequests = { status: 'available', count: 0 };
+const robotsZeroRoot = await writeFixture('robots-zero', robotsZeroSnapshot);
 
 const completedSnapshot = structuredClone(demo);
 completedSnapshot.cutoffExclusive = completedSnapshot.periodEndExclusive;
@@ -32,7 +48,7 @@ completedSnapshot.isYearToDate = false;
 const completedRoot = await writeFixture('completed', completedSnapshot);
 
 const limitedRoot = join(scratch, 'limited');
-const limitedSnapshot = structuredClone(demo) as unknown as PublicSnapshot;
+const limitedSnapshot = structuredClone(demo) as unknown as PublicSnapshotV2;
 limitedSnapshot.mode = 'real';
 limitedSnapshot.coverage = {
   scope: 'accessible-repositories',
@@ -40,7 +56,7 @@ limitedSnapshot.coverage = {
 };
 const candidateText = `${JSON.stringify(limitedSnapshot, null, 2)}\n`;
 const coverage = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   candidateHash: digest(candidateText),
   jiraExclusionsConfirmed: true,
   metrics: {
@@ -48,6 +64,9 @@ const coverage = {
     productionDeployments: { complete: false, inventoryVerified: false, issues: [{ source: 'github-inventory', identifier: 'fixture', reason: 'inventory' }], sourceChecks: [{ source: 'github', status: 'success' }] },
     workItemsClosed: { complete: false, inventoryVerified: false, issues: [{ source: 'jira-project-visibility', identifier: 'fixture', reason: 'inventory' }], sourceChecks: [{ source: 'jira', status: 'success' }] },
   },
+  playfulCoverage: { complete: false, inventoryVerified: false,
+    issues: [{ source: 'github-inventory', identifier: 'fixture', reason: 'inventory' }],
+    sourceChecks: [{ source: 'github', status: 'success' }] },
 };
 const coverageText = `${JSON.stringify(coverage, null, 2)}\n`;
 const approval = {
@@ -72,6 +91,10 @@ const origins = {
   completed: { port: 4175, root: completedRoot, demo: true, base: '' },
   subpath: { port: 4176, root: await writeFixture('subpath', structuredClone(demo)), demo: true, base: '/year-in-review' },
   limited: { port: 4177, root: limitedRoot, demo: false, base: '' },
+  half: { port: 4178, root: halfRoot, demo: true, base: '' },
+  zero: { port: 4179, root: zeroRoot, demo: true, base: '' },
+  robotsZero: { port: 4180, root: robotsZeroRoot, demo: true, base: '' },
+  legacyV1: { port: 4181, root: await writeFixture('legacy-v1', legacyV1), demo: true, base: '' },
 };
 
 const builds: Record<string, string> = {};

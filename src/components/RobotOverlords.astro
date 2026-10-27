@@ -1,0 +1,43 @@
+---
+import { botShare, type PlayfulMetrics } from '../data/playful';
+
+interface Props {
+  metrics: PlayfulMetrics;
+}
+
+const { metrics } = Astro.props;
+const merged = metrics.mergedPullRequests;
+const bots = metrics.botAuthoredPullRequests;
+const share = merged.status === 'available' && bots.status === 'available'
+  && metrics.unknownAuthorPullRequests === 0
+  ? botShare(bots.count, merged.count)
+  : null;
+const number = (value: number) => new Intl.NumberFormat('en-US').format(value);
+const percent = share === null ? null : `${Math.round(share * 100)}%`;
+---
+<section class="robot-overlords" id="robot-overlords" aria-labelledby="robot-title">
+  <div class="robot-overlords__copy">
+    <p class="chapter-label chapter-label--light"><span class="chapter-label__number">03</span> &nbsp; AUTOMATION, REPORTING FOR DUTY</p>
+    <h2 id="robot-title">Welcoming our Robot Overlords</h2>
+    <p class="robot-overlords__lede">Meet the bots with a place in our merge history.</p>
+    <p class="robot-overlords__caveat">Bot-authored merged PRs only—not all automation or AI-written code. Still no help with the dishes.</p>
+  </div>
+
+  <div class="robot-overlords__readout" data-testid="bot-pr-share" aria-label="Bot-authored merged pull request count and share">
+    <p class="robot-overlords__percentage">{percent ?? '—'}</p>
+    <p class="robot-overlords__share-caption">{share === null ? 'No exact share available' : 'of merged pull requests'}</p>
+    <p class="robot-overlords__counts">
+      <strong>{bots.status === 'available' ? number(bots.count) : 'Not available'} of {merged.status === 'available' ? number(merged.count) : 'Not available'}</strong>
+      <span>merged PRs were bot-authored</span>
+    </p>
+    {share === null && (
+      <p class="robot-overlords__unknown">A percentage needs at least one merged PR, a known bot count, and classifiable authors.</p>
+    )}
+  </div>
+
+  <div class="robot-doodle" aria-hidden="true">
+    <span class="robot-doodle__antenna"></span>
+    <span class="robot-doodle__head"><i></i><i></i><b></b></span>
+    <span class="robot-doodle__body"><i></i><i></i></span>
+  </div>
+</section>
