@@ -18,18 +18,18 @@ const addedLinesAreZero = linesAdded.status === 'available' && linesAdded.count 
     <p class="eyebrow">Investments Apps Team · {yearLabel}</p>
     {hasAddedLines ? (
       <>
-        <h1 id="page-title">Some code.<br /><em>A surprising number of Slaughterhouse-Fives.</em></h1>
-        <p class="scale-moment__description">Listen: the year's added lines, stacked up as copies of <em>Slaughterhouse-Five</em>. Billy Pilgrim would approve. Nothing hidden — the exact total and assumptions are right here. So it goes.</p>
+        <h1 id="page-title">Some code.<br /><em>A surprising number of books.</em></h1>
+        <p class="scale-moment__description">Listen: the year's added lines, stacked up as a shelf of printed books. Nothing hidden — the exact total and assumptions are right here. So it goes.</p>
       </>
     ) : addedLinesAreZero ? (
       <>
         <h1 id="page-title">No lines added.<br /><em>No book stack.</em></h1>
-        <p class="scale-moment__description">The added-line count is zero, so the printing press stays idle and Slaughterhouse-Five stays on the shelf. The rest of the year still has stories. So it goes.</p>
+        <p class="scale-moment__description">The added-line count is zero, so the printing press stays idle and the book stays on the shelf. The rest of the year still has stories. So it goes.</p>
       </>
     ) : (
       <>
         <h1 id="page-title">The code count<br /><em>is unstuck in time.</em></h1>
-        <p class="scale-moment__description">No Slaughterhouse-Five comparison until a complete added-line total is available. The rest of the year still has stories. So it goes.</p>
+        <p class="scale-moment__description">No book comparison until a complete added-line total is available. The rest of the year still has stories. So it goes.</p>
       </>
     )}
   </div>
