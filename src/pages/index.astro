@@ -3,6 +3,7 @@ import { DateTime } from 'luxon';
 import Layout from '../layouts/Layout.astro';
 import RecapChapter from '../components/RecapChapter.astro';
 import RobotOverlords from '../components/RobotOverlords.astro';
+import MajorProjects from '../components/MajorProjects.astro';
 import ScaleMoment from '../components/ScaleMoment.astro';
 import CoffeeScale from '../components/CoffeeScale.astro';
 import { estimateCaffeine } from '../data/caffeine';
@@ -52,6 +53,48 @@ const securityChapterIndex = playful ? '04 · The fix-it file' : '01 · The fix-
 const deploymentChapterIndex = playful ? '05 · The shipping log' : '02 · The shipping log';
 const workChapterIndex = playful ? '06 · The done list' : '03 · The done list';
 
+const majorProjects = [
+  {
+    title: 'Account structure validation',
+    tagline: 'Catching the tangles early.',
+    description:
+      "Checks that account setups hang together the way they're supposed to, before a problem has a chance to travel downstream. Fewer surprises later, and more confidence that what's recorded actually lines up.",
+  },
+  {
+    title: 'The data lake',
+    tagline: 'One place for the data to pool.',
+    description:
+      "A shared home for the team's data, so the numbers everyone relies on come from the same well instead of a dozen scattered buckets. Easier to find, easier to trust, easier to build on.",
+  },
+  {
+    title: 'Desktop app test environment',
+    tagline: 'A safe room to try things.',
+    description:
+      'A dedicated space to put the desktop application through its paces — plus generated test data to fill it — so we can rehearse the tricky cases without touching anything real. More confidence before release, fewer "well, it worked on my machine" moments.',
+  },
+  {
+    title: 'The shared toolkit',
+    tagline: 'The quiet workhorses.',
+    description:
+      'The behind-the-scenes helpers and automations the team keeps sharpening — small on their own, but they shave time off the work nobody should have to do twice.',
+  },
+];
+
+const upcomingProjects = [
+  {
+    title: 'Investments MCP server',
+    tagline: 'A friendlier front door for the tools.',
+    description:
+      "Gives our assistants and automations a clean, consistent way to reach the team's investment data and workflows — so the helpful robots ask nicely and get a sensible answer every time.",
+  },
+  {
+    title: 'Automated document retrieval',
+    tagline: "Fetching the paper, so we don't have to.",
+    description:
+      'Teaching our systems to track down the right documents on their own, so the information we need turns up without waiting on a manual hunt. Less digging, more doing.',
+  },
+];
+
 const dependencyDefinition = 'Dependabot dependency alerts marked fixed during the reporting period. Dismissed alerts are not counted; this is not a count of all security alerts.';
 const deploymentDefinition = 'Successful production deployments, grouped by the month of first success.';
 const workDefinition = 'Completed work items during the reporting period, excluding epics and canceled or duplicate work.';
@@ -70,6 +113,8 @@ const workDefinition = 'Completed work items during the reporting period, exclud
         {playful && <a href="#code-added">Code added</a>}
         {playful && <a href="#code-removed">Code removed</a>}
         {playful && <a href="#robot-overlords">Robot Overlords</a>}
+        <a href="#projects">Projects</a>
+        <a href="#upcoming">Upcoming</a>
         <a href="#security">Security</a>
         <a href="#deployments">Deployments</a>
         <a href="#work-items">Work items</a>
@@ -106,6 +151,22 @@ const workDefinition = 'Completed work items during the reporting period, exclud
     )}
 
     {playful && <RobotOverlords metrics={playful} />}
+
+    <MajorProjects
+      id="projects"
+      eyebrow="THE PROJECT SHELF"
+      heading="Big builds, briefly."
+      lede="A few of the larger things the team worked on this year — the kind that don't fit in a single count. Here's the short version of what each one does and why it earns its place."
+      projects={majorProjects}
+    />
+
+    <MajorProjects
+      id="upcoming"
+      eyebrow="STILL IN THE WORKSHOP"
+      heading="What's next on the bench."
+      lede="Work that's still in flight — either picking up steam or just getting started. Here's where each one is headed."
+      projects={upcomingProjects}
+    />
 
     <section class="explore" aria-labelledby="explore-title">
       <div class="explore__heading">

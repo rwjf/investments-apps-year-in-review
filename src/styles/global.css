@@ -322,6 +322,22 @@ a:focus-visible, button:focus-visible, summary:focus-visible { outline: 3px soli
 .chapter-index strong { max-width: calc(100% - 1.3rem); font-family: "Iowan Old Style", Georgia, serif; font-size: 1.12rem; line-height: 1.1; }
 .chapter-index span { position: absolute; right: 0.9rem; bottom: 0.8rem; font-size: 1.05rem; }
 
+.projects { padding: clamp(2.6rem, 5vw, 4.2rem) 0 clamp(2.6rem, 5vw, 4rem); border-top: 1px solid var(--line); scroll-margin-top: 1.5rem; }
+.projects__heading { max-width: 720px; margin-bottom: clamp(1.5rem, 3vw, 2.2rem); }
+.projects__heading .eyebrow { margin-bottom: 0.7rem; }
+.projects__heading h2 { margin: 0; font-family: "Iowan Old Style", "Baskerville", Georgia, serif; font-size: clamp(2rem, 4vw, 3.3rem); font-weight: 600; letter-spacing: -0.05em; line-height: 1; }
+.projects__lede { margin: 0.9rem 0 0; color: var(--ink-soft); font-family: "Iowan Old Style", "Baskerville", Georgia, serif; font-size: 0.98rem; line-height: 1.55; }
+.projects__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 0.9rem; margin: 0; padding: 0; list-style: none; }
+.project-card { display: flex; min-width: 0; flex-direction: column; padding: 1.25rem 1.3rem 1.35rem; border-radius: 0.75rem 0.75rem 0.2rem 0.75rem; background: #e8f8f2; transition: transform 170ms ease, box-shadow 170ms ease; }
+.projects__grid li:nth-child(5n + 2) { background: var(--purple-pale); }
+.projects__grid li:nth-child(5n + 3) { background: #fff7c8; }
+.projects__grid li:nth-child(5n + 4) { background: #eef1fb; }
+.projects__grid li:nth-child(5n + 5) { background: #fbeef6; }
+.project-card:hover { transform: translateY(-3px); box-shadow: 0 0.7rem 1.25rem #042e4315; }
+.project-card__title { margin: 0; font-family: "Iowan Old Style", Georgia, serif; font-size: 1.2rem; font-weight: 600; letter-spacing: -0.02em; line-height: 1.12; }
+.project-card__tagline { margin: 0.35rem 0 0.7rem; color: var(--purple-dark); font-size: 0.74rem; font-weight: 850; letter-spacing: 0.055em; text-transform: uppercase; }
+.project-card__description { margin: 0; color: #38535e; font-family: "Iowan Old Style", "Baskerville", Georgia, serif; font-size: 0.92rem; line-height: 1.52; }
+
 .chapter { padding: clamp(2.4rem, 4.7vw, 3.8rem) 0; border-top: 1px solid var(--line); scroll-margin-top: 1.5rem; }
 .chapter__heading { margin-bottom: 1.4rem; }
 .chapter__heading .eyebrow { margin-bottom: 0.55rem; }
@@ -384,6 +400,7 @@ a:focus-visible, button:focus-visible, summary:focus-visible { outline: 3px soli
   .chapter-index a { min-height: 5.8rem; padding: 0.78rem; }
   .chapter-index strong { font-size: 0.95rem; }
   .chapter-index small { font-size: 0.55rem; }
+  .projects__grid { grid-template-columns: minmax(0, 1fr); gap: 0.6rem; }
   .chapter__body { grid-template-columns: minmax(0, 1fr); gap: 1.35rem; }
   .chapter__breakdown ul { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 0.9rem; }
   .story-note { margin-top: -0.45rem; }

@@ -1,0 +1,33 @@
+---
+interface Project {
+  title: string;
+  tagline: string;
+  description: string;
+}
+
+interface Props {
+  id: string;
+  eyebrow: string;
+  heading: string;
+  lede: string;
+  projects: Project[];
+}
+
+const { id, eyebrow, heading, lede, projects } = Astro.props;
+---
+<section class="projects" id={id} aria-labelledby={`${id}-title`}>
+  <div class="projects__heading">
+    <p class="eyebrow">{eyebrow}</p>
+    <h2 id={`${id}-title`}>{heading}</h2>
+    <p class="projects__lede">{lede}</p>
+  </div>
+  <ul class="projects__grid" role="list">
+    {projects.map((project) => (
+      <li class="project-card">
+        <h3 class="project-card__title">{project.title}</h3>
+        <p class="project-card__tagline">{project.tagline}</p>
+        <p class="project-card__description">{project.description}</p>
+      </li>
+    ))}
+  </ul>
+</section>
