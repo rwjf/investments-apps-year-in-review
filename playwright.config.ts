@@ -30,7 +30,7 @@ unavailableSnapshot.playful.linesRemoved = { status: 'unavailable', count: null 
 const unavailableRoot = await writeFixture('unavailable', unavailableSnapshot);
 
 const halfSnapshot = structuredClone(demo) as unknown as PublicSnapshotV2;
-halfSnapshot.playful.linesAdded = { status: 'available', count: 28_480 };
+halfSnapshot.playful.linesAdded = { status: 'available', count: 5_500 };
 const halfRoot = await writeFixture('book-half', halfSnapshot);
 
 const zeroSnapshot = structuredClone(demo) as unknown as PublicSnapshotV2;

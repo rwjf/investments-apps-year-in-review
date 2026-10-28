@@ -52,7 +52,7 @@
   "playful": {
     "methodologyVersion": "known-generated-v1",
     "mergedPullRequests": { "status": "available", "count": 4 },
-    "linesAdded": { "status": "available", "count": 56960 },
+    "linesAdded": { "status": "available", "count": 11000 },
     "linesRemoved": { "status": "available", "count": 23840 },
     "botAuthoredPullRequests": { "status": "available", "count": 1 },
     "unknownAuthorPullRequests": 0

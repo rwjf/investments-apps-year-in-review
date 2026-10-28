@@ -9,19 +9,19 @@ const { linesAdded } = Astro.props;
 const number = (value: number) => new Intl.NumberFormat('en-US').format(value);
 const quantity = linesAdded.status === 'available' ? bookEquivalents(linesAdded.count) : null;
 const bookCopy = (amount: number) => {
-  if (amount === 0) return 'Zero book-sized stacks';
-  if (Math.abs(amount - 1) < 0.000001) return 'About 1 copy of War and Peace';
-  if (Math.abs(amount - 0.5) < 0.000001) return 'About half a copy of War and Peace';
-  if (amount < 1) return `About ${amount.toFixed(1)} of a War and Peace`;
-  return `About ${amount.toFixed(1)} copies of War and Peace`;
+  if (amount === 0) return 'Zero copies of Slaughterhouse-Five';
+  if (Math.abs(amount - 1) < 0.000001) return 'About 1 copy of Slaughterhouse-Five';
+  if (Math.abs(amount - 0.5) < 0.000001) return 'About half a copy of Slaughterhouse-Five';
+  if (amount < 1) return `About ${amount.toFixed(1)} of a Slaughterhouse-Five`;
+  return `About ${amount.toFixed(1)} copies of Slaughterhouse-Five`;
 };
 const bookProgress = quantity === null ? 0 : Math.min(quantity, 1);
 ---
 <section class="book-scale" aria-label="Added code, compared with a printed book">
   <div class="book-scale__copy">
-    <p class="chapter-label"><span class="chapter-label__number">01</span> &nbsp; THE CODE-ADDED EDITION</p>
+    <p class="chapter-label"><span class="chapter-label__number">01</span> &nbsp; LISTEN: THE CODE-ADDED EDITION</p>
     {quantity !== null && <p class="book-scale__result" data-testid="book-result">{bookCopy(quantity)}</p>}
-    {quantity !== null && <p class="book-scale__book-title"><em>War and Peace</em>, meet code and coffee.</p>}
+    {quantity !== null && <p class="book-scale__book-title">Billy Pilgrim has come unstuck in the commit log. So it goes.</p>}
     <div class="book-scale__total-row">
       <span class="book-scale__total-label">Lines added</span>
       <strong data-testid="code-added-total">{linesAdded.status === 'available' ? number(linesAdded.count) : 'Not available'}</strong>
@@ -30,7 +30,7 @@ const bookProgress = quantity === null ? 0 : Math.min(quantity, 1);
       <p class="book-scale__method">The book comparison is waiting for complete added-line totals. No volume estimate yet.</p>
     ) : (
       <p class="book-scale__method">
-        A playful estimate: {LINES_PER_PAGE} code lines per printed page × {BOOK_PAGES.toLocaleString('en-US')} pages in this <em>War and Peace</em> edition. Not a claim that code reads like a novel.
+        A playful estimate: {LINES_PER_PAGE} code lines per printed page × {BOOK_PAGES.toLocaleString('en-US')} pages in this <em>Slaughterhouse-Five</em> edition. Not a claim that code reads like a Kilgore Trout novel. And so on.
       </p>
     )}
     <details class="book-scale__details">
@@ -45,7 +45,7 @@ const bookProgress = quantity === null ? 0 : Math.min(quantity, 1);
         <div class="book-illustration__pages" aria-hidden="true"></div>
         <div class="book-illustration__cover" aria-hidden="true">
           <span class="book-illustration__seal">THE<br />CODE<br />EDITION</span>
-          <span class="book-illustration__title">WAR<br /><i>+</i><br />PEACE</span>
+          <span class="book-illustration__title">SO IT<br /><i>·</i><br />GOES</span>
           <span class="book-illustration__rule" aria-hidden="true"></span>
           <span class="book-illustration__byline">A very loose comparison</span>
         </div>

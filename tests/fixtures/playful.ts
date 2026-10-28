@@ -7,7 +7,7 @@ export function v2Fixture() {
     playful: {
       methodologyVersion: 'known-generated-v1',
       mergedPullRequests: { status: 'available', count: 4 } as { status: string; count: number | null },
-      linesAdded: { status: 'available', count: 56_960 } as { status: string; count: number | null },
+      linesAdded: { status: 'available', count: 11_000 } as { status: string; count: number | null },
       linesRemoved: { status: 'available', count: 10 } as { status: string; count: number | null },
       botAuthoredPullRequests: { status: 'available', count: 1 } as { status: string; count: number | null },
       unknownAuthorPullRequests: 0,

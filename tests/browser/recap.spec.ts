@@ -13,11 +13,11 @@ test('sample recap leads with the book comparison and retains the team-wide stor
   await expect(page.locator('meta[name="recap-mode"]')).toHaveAttribute('content', 'demo');
   await expect(page.locator('.scale-moment__intro .eyebrow')).toContainText('2026 so far');
   await expect(page.getByLabel('Illustrative data warning')).toContainText('Illustrative example only; no source data was collected.');
-  await expect(page.getByTestId('book-result')).toContainText(/about 1 .*War and Peace/i);
-  await expect(page.getByTestId('code-added-total')).toContainText('56,960');
+  await expect(page.getByTestId('book-result')).toContainText(/about 1 .*Slaughterhouse-Five/i);
+  await expect(page.getByTestId('code-added-total')).toContainText('11,000');
   await expect(page.getByTestId('code-removed-total')).toContainText('23,840');
   await expect(page.getByText(/40 code lines per printed page/i)).toBeVisible();
-  await expect(page.getByText(/1,424 pages/i)).toBeVisible();
+  await expect(page.getByText(/275 pages/i)).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Welcoming our Robot Overlords', exact: true })).toBeVisible();
   await expect(page.getByTestId('bot-pr-share')).toContainText('1 of 4');
   await expect(page.getByTestId('bot-pr-share')).toContainText('25%');
@@ -29,7 +29,7 @@ test('sample recap leads with the book comparison and retains the team-wide stor
   await expect(page.locator('#deployments')).toContainText('Months after the reporting cutoff are not shown.');
   await expect(page.locator('#deployments')).not.toContainText('November');
   await expect(page.locator('#deployments')).not.toContainText('December');
-  await expect(page.getByRole('navigation', { name: 'Recap sections' }).getByRole('link')).toHaveCount(6);
+  await expect(page.getByRole('navigation', { name: 'Recap sections' }).getByRole('link')).toHaveCount(8);
 });
 
 test('coffee estimate is explicit, compact, and fits narrow and wide screens', async ({ page }) => {
@@ -38,9 +38,9 @@ test('coffee estimate is explicit, compact, and fits narrow and wide screens', a
 
   const estimate = page.getByTestId('coffee-scale');
   await expect(page).toHaveTitle('Investments Apps Team Year in Review');
-  await expect(estimate.getByText('Estimated coffee equivalent')).toBeVisible();
+  await expect(estimate.getByText('Estimated coffee equivalent', { exact: false })).toBeVisible();
   await expect(page.getByTestId('caffeine-headline')).toHaveText('A bathtub and a half of coffee.');
-  await expect(page.getByTestId('caffeine-litres')).toHaveText('About 300 litres. Please continue using mugs.');
+  await expect(page.getByTestId('caffeine-litres')).toHaveText('About 300 litres. Please continue using mugs. So it goes.');
   await expect(page.getByTestId('caffeine-total')).toContainText('180 g');
   await expect(estimate.getByText('1.5×')).toBeVisible();
   const method = estimate.locator('details');
@@ -50,7 +50,7 @@ test('coffee estimate is explicit, compact, and fits narrow and wide screens', a
   await expect(method).toContainText('200-litre bathtub');
   await expect(method).toContainText('not a measure of anyone’s actual caffeine intake');
 
-  await expect(page.getByTestId('code-added-total')).toContainText('56,960');
+  await expect(page.getByTestId('code-added-total')).toContainText('11,000');
   await expect(page.getByTestId('code-removed-total')).toContainText('23,840');
   await expect(page.locator('#security .chapter__count')).toHaveText('128');
   await expect(page.locator('#deployments .chapter__count')).toHaveText('42');
@@ -67,8 +67,8 @@ test('coffee estimate is explicit, compact, and fits narrow and wide screens', a
 test('half a book stays approximate and keeps its exact line total nearby', async ({ page }) => {
   scenario('half');
   await page.goto('/');
-  await expect(page.getByTestId('book-result')).toContainText(/about half .*War and Peace/i);
-  await expect(page.getByTestId('code-added-total')).toContainText('28,480');
+  await expect(page.getByTestId('book-result')).toContainText(/about half .*Slaughterhouse-Five/i);
+  await expect(page.getByTestId('code-added-total')).toContainText('5,500');
 });
 
 test('zero added lines is honest and does not draw a fake book stack', async ({ page }) => {
@@ -77,8 +77,8 @@ test('zero added lines is honest and does not draw a fake book stack', async ({ 
   const lead = page.locator('#code-added .scale-moment__intro');
   await expect(lead).toContainText('No lines added');
   await expect(lead).toContainText('No book stack');
-  await expect(lead).not.toContainText(/very big book|wildly oversized/i);
-  await expect(page.getByTestId('book-result')).toContainText(/zero .*book/i);
+  await expect(lead).not.toContainText(/surprising number of Vonneguts|Billy Pilgrim/i);
+  await expect(page.getByTestId('book-result')).toContainText(/zero copies of Slaughterhouse-Five/i);
   await expect(page.locator('.book-illustration')).toHaveCount(0);
   await expect(page.getByTestId('code-added-total')).toContainText('0');
 });
@@ -87,11 +87,11 @@ test('unavailable code totals do not produce a book claim', async ({ page }) => 
   scenario('unavailable');
   await page.goto('/');
   const lead = page.locator('#code-added .scale-moment__intro');
-  await expect(lead).toContainText(/code count\s*is unavailable/i);
-  await expect(lead).not.toContainText(/War and Peace|very big book|wildly oversized|book.{0,30}(?:fill|equiv|estimate)/i);
+  await expect(lead).toContainText(/code count\s*is unstuck in time/i);
+  await expect(lead).not.toContainText(/surprising number of Vonneguts|Billy Pilgrim|book.{0,30}(?:fill|equiv|estimate)/i);
   await expect(page.getByTestId('code-added-total')).toContainText('Not available');
   await expect(page.locator('[data-testid="book-result"]')).toHaveCount(0);
-  await expect(page.locator('#code-added')).not.toContainText(/War and Peace|about \d|book equivalent/i);
+  await expect(page.locator('#code-added')).not.toContainText(/about \d|book equivalent/i);
   for (const id of ['security', 'deployments', 'work-items']) {
     await expect(page.locator(`#${id} .chapter__count`)).toHaveText('Not available');
   }
@@ -107,7 +107,7 @@ test('legacy v1 snapshots keep their recorded stories without invented code or r
   await expect(page.locator('#code-added')).toHaveCount(0);
   await expect(page.locator('#code-removed')).toHaveCount(0);
   await expect(page.locator('#robot-overlords')).toHaveCount(0);
-  await expect(page.getByRole('navigation', { name: 'Recap sections' }).getByRole('link')).toHaveCount(3);
+  await expect(page.getByRole('navigation', { name: 'Recap sections' }).getByRole('link')).toHaveCount(5);
 });
 
 test('zero merged pull requests never invent a bot percentage', async ({ page }) => {
@@ -187,7 +187,7 @@ test('content remains available without scripts and all requests stay local', as
   expect(html).not.toMatch(/INSUP|RWJFINVEST/);
   await expect(page.locator('a[href*="github.com"], a[href*="atlassian.net"], a[href*="jira"]')).toHaveCount(0);
   await expect(page.locator('script')).toHaveCount(0);
-  await expect(page.getByTestId('book-result')).toContainText(/about 1 .*War and Peace/i);
+  await expect(page.getByTestId('book-result')).toContainText(/about 1 .*Slaughterhouse-Five/i);
   await expect(page.getByTestId('caffeine-headline')).toHaveText('A bathtub and a half of coffee.');
   await expect(page.getByTestId('caffeine-litres')).toContainText('About 300 litres');
   await expect(page.getByTestId('caffeine-total')).toContainText('180 g');

@@ -71,11 +71,11 @@ describe('versioned public snapshot and scalar math', () => {
     expect(playful.bookEquivalents).toBeTypeOf('function');
     const { bookEquivalents, botShare } = playful;
     expect(playful.LINES_PER_PAGE).toBe(40);
-    expect(playful.BOOK_PAGES).toBe(1424);
-    expect(bookEquivalents(56_960)).toBe(1);
-    expect(bookEquivalents(28_480)).toBe(0.5);
+    expect(playful.BOOK_PAGES).toBe(275);
+    expect(bookEquivalents(11_000)).toBe(1);
+    expect(bookEquivalents(5_500)).toBe(0.5);
     expect(bookEquivalents(0)).toBe(0);
-    expect(bookEquivalents(1)).toBe(1 / 56_960);
+    expect(bookEquivalents(1)).toBe(1 / 40 / 275);
     expect(botShare(1, 4)).toBe(0.25);
     expect(botShare(0, 0)).toBeNull();
   });

@@ -1,7 +1,8 @@
 import { z } from 'zod';
 
 export const LINES_PER_PAGE = 40;
-export const BOOK_PAGES = 1424;
+// Slaughterhouse-Five (Dial Press / Delta edition), ~275 pages. So it goes.
+export const BOOK_PAGES = 275;
 
 const countSchema = z.number().int().nonnegative();
 

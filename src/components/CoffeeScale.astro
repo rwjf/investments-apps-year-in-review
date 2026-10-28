@@ -31,15 +31,15 @@ const headline = isApprovedSnapshot
       ? 'Less than 0.001 bathtub equivalents of coffee.'
       : `About ${bathtubLabel} bathtub equivalents of coffee.`;
 const coffeeDescription = isApprovedSnapshot
-  ? 'About 300 litres. Please continue using mugs.'
+  ? 'About 300 litres. Please continue using mugs. So it goes.'
   : isZero
-    ? 'There are no calendar days in this reporting period.'
-    : `About ${number(estimate.coffeeLitres, 2)} litres. Please continue using mugs.`;
+    ? 'There are no calendar days in this reporting period. So it goes.'
+    : `About ${number(estimate.coffeeLitres, 2)} litres. Please continue using mugs. So it goes.`;
 ---
 
 <section class="coffee-scale" aria-labelledby="coffee-scale-title" data-testid="coffee-scale">
   <div class="coffee-scale__copy">
-    <p class="coffee-scale__eyebrow">Estimated coffee equivalent</p>
+    <p class="coffee-scale__eyebrow">Estimated coffee equivalent · a Tralfamadorian aside</p>
     <h2 id="coffee-scale-title" data-testid="caffeine-headline">{headline}</h2>
     <p class="coffee-scale__description" data-testid="caffeine-litres">{coffeeDescription}</p>
     <p class="coffee-scale__caffeine" data-testid="caffeine-total">
