@@ -65,6 +65,22 @@ After restoring old reviewed data, re-export its public manifest before committi
 
 ## Collect real data locally
 
+### Quick reference
+
+The full sequence for generating a new reviewed aggregate snapshot, run **locally** (Actions never collects, approves, or exports):
+
+```sh
+npm run collect -- --year 2026        # read GitHub (gh CLI) + Jira, write private candidate + coverage
+npm run collect:playful               # optional: add merged-PR / lines / bot metrics (needs an approved core snapshot)
+# Review .recap-private/candidate.json and .recap-private/coverage.json
+npm run approve -- --confirm-reviewed  # promote reviewed data to src/data/approved.json (+ private receipt)
+npm run export:approved               # write the public src/data/approved.manifest.json
+npm run build:published               # verify the portable build
+npm run check:dist                    # confirm no private content leaked into dist/
+```
+
+Then commit `src/data/approved.json` and `src/data/approved.manifest.json` together. Credentials are used only by the local `collect`/`collect:playful` steps and never leave your machine. Each step below explains the review gates in full; `--acknowledge-accessible-scope` may be added to `approve` only when the single remaining uncertainty is independent inventory/visibility.
+
 ### 1. Configure access
 
 GitHub reads use your existing local GitHub CLI session:
