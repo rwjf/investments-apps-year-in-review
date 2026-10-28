@@ -77,7 +77,7 @@ test('zero added lines is honest and does not draw a fake book stack', async ({ 
   const lead = page.locator('#code-added .scale-moment__intro');
   await expect(lead).toContainText('No lines added');
   await expect(lead).toContainText('No book stack');
-  await expect(lead).not.toContainText(/surprising number of Vonneguts|Billy Pilgrim/i);
+  await expect(lead).not.toContainText(/surprising number of Slaughterhouse-Fives|Billy Pilgrim/i);
   await expect(page.getByTestId('book-result')).toContainText(/zero copies of Slaughterhouse-Five/i);
   await expect(page.locator('.book-illustration')).toHaveCount(0);
   await expect(page.getByTestId('code-added-total')).toContainText('0');
@@ -88,7 +88,7 @@ test('unavailable code totals do not produce a book claim', async ({ page }) => 
   await page.goto('/');
   const lead = page.locator('#code-added .scale-moment__intro');
   await expect(lead).toContainText(/code count\s*is unstuck in time/i);
-  await expect(lead).not.toContainText(/surprising number of Vonneguts|Billy Pilgrim|book.{0,30}(?:fill|equiv|estimate)/i);
+  await expect(lead).not.toContainText(/surprising number of Slaughterhouse-Fives|Billy Pilgrim|book.{0,30}(?:fill|equiv|estimate)/i);
   await expect(page.getByTestId('code-added-total')).toContainText('Not available');
   await expect(page.locator('[data-testid="book-result"]')).toHaveCount(0);
   await expect(page.locator('#code-added')).not.toContainText(/about \d|book equivalent/i);

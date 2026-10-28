@@ -120,6 +120,8 @@ a:focus-visible, button:focus-visible, summary:focus-visible { outline: 3px soli
   font-weight: 600;
   letter-spacing: -0.07em;
   line-height: 0.91;
+  overflow-wrap: break-word;
+  hyphens: auto;
 }
 .scale-moment h1 em, .v1-intro h1 em { color: var(--purple); font-style: normal; }
 .scale-moment__description, .v1-intro > p:last-child {
