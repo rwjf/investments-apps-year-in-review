@@ -171,6 +171,159 @@ test('chapter links work by keyboard and layout remains usable at narrow and wid
   await expect(page.locator('html')).toHaveCSS('scroll-behavior', 'auto');
 });
 
+test('presentation chapters fill the screen without clipping the story', async ({ page }) => {
+  scenario('sample');
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/');
+
+  for (const id of ['projects', 'upcoming']) {
+    const section = page.locator(`#${id}`);
+    const bounds = await section.boundingBox();
+    expect(bounds).not.toBeNull();
+    expect(bounds!.x).toBe(0);
+    expect(bounds!.width).toBe(1440);
+    expect(bounds!.height).toBeGreaterThanOrEqual(648);
+  }
+  await expect(page.locator('#projects .project-card')).toHaveCount(4);
+  await expect(page.locator('#upcoming .project-card')).toHaveCount(2);
+
+  for (const id of ['security', 'deployments', 'work-items']) {
+    const bounds = await page.locator(`#${id}`).boundingBox();
+    expect(bounds).not.toBeNull();
+    expect(bounds!.height).toBeGreaterThanOrEqual(648);
+  }
+
+  for (const width of [320, 375, 640, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    for (const id of ['projects', 'upcoming']) {
+      const bounds = await page.locator(`#${id}`).boundingBox();
+      expect(bounds).not.toBeNull();
+      expect(bounds!.x).toBe(0);
+      expect(bounds!.width).toBe(width);
+      await expect(page.locator(`#${id} .project-card`)).toHaveCount(id === 'projects' ? 4 : 2);
+    }
+  }
+
+  await page.setViewportSize({ width: 1280, height: 600 });
+  await page.goto('/');
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  for (const id of ['projects', 'upcoming', 'security', 'deployments', 'work-items']) {
+    await page.locator(`#${id}`).scrollIntoViewIfNeeded();
+    await expect(page.locator(`#${id} h2`)).toBeInViewport();
+  }
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  for (const id of ['projects', 'upcoming', 'security', 'deployments', 'work-items']) {
+    await page.goto(`/#${id}`);
+    await expect(page.locator(`#${id} h2`)).toBeInViewport();
+  }
+});
+
+for (const javaScriptEnabled of [true, false]) {
+  test(`presentation normal-motion reveals become opaque with JavaScript ${javaScriptEnabled ? 'enabled' : 'disabled'}`, async ({ browser }) => {
+    scenario('sample');
+    for (const viewport of [{ width: 1440, height: 900 }, { width: 375, height: 812 }]) {
+      const context = await browser.newContext({ viewport, javaScriptEnabled, reducedMotion: 'no-preference' });
+      try {
+        const page = await context.newPage();
+        await page.goto('http://127.0.0.1:4173/');
+        await expect(page.locator('script')).toHaveCount(0);
+        expect(await page.evaluate(() => CSS.supports('animation-timeline', 'view()'))).toBe(true);
+        const reveals = page.locator('.projects__heading, .project-card, .coffee-scale, .robot-overlords, .chapter__heading, .chapter__body, .explore__heading, .chapter-index a');
+        await expect(reveals).toHaveCount(20);
+        // A below-fold card starts hidden: this checks the active motion path, not reduced motion.
+        await expect(page.locator('#projects .project-card').first()).toHaveCSS('opacity', '0');
+        for (const reveal of await reveals.all()) {
+          await reveal.evaluate(element => element.scrollIntoView({ block: 'center', behavior: 'instant' }));
+          await expect(reveal).toBeInViewport();
+          await expect(reveal).toHaveCSS('opacity', '1');
+          // Delayed view timelines can leave sub-pixel floating-point residue at progress 1.
+          await expect.poll(() => reveal.evaluate(element => new DOMMatrixReadOnly(getComputedStyle(element).transform).m42)).toBeCloseTo(0, 4);
+        }
+        await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      } finally {
+        await context.close();
+      }
+    }
+  });
+}
+
+test('presentation unsupported-timeline gate leaves content opaque and unanimated', async ({ page }) => {
+  scenario('sample');
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  let replacedGate = false;
+  await page.route('**/*.css', async route => {
+    const response = await route.fetch();
+    const original = await response.text();
+    // Exercise the false @supports branch without pretending Chromium lacks native support.
+    const body = original.replace(/@supports\s*\(animation-timeline:\s*view\(\)\)/g, '@supports (presentation-unsupported-feature: unsupported)');
+    replacedGate ||= body !== original;
+    await route.fulfill({ response, body });
+  });
+  await page.goto('/');
+  expect(replacedGate).toBe(true);
+  for (const element of await page.locator('.projects__heading, .project-card, .coffee-scale, .robot-overlords, .chapter__heading, .chapter__body, .explore__heading, .chapter-index a').all()) {
+    await expect(element).toHaveCSS('opacity', '1');
+    await expect(element).toHaveCSS('animation-name', 'none');
+  }
+  await page.goto('/#upcoming');
+  await expect(page.locator('#upcoming h2')).toBeInViewport();
+});
+
+test('presentation independent viewports produce correctly sized screenshots without overflow', async ({ browser }, testInfo) => {
+  scenario('sample');
+  const dimensions = [];
+  for (const viewport of [{ width: 1440, height: 900 }, { width: 375, height: 812 }]) {
+    const context = await browser.newContext({ viewport, reducedMotion: 'reduce' });
+    try {
+      const page = await context.newPage();
+      await page.goto('http://127.0.0.1:4173/');
+      const bounds = await page.evaluate(() => ({
+        viewport: innerWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+        scrollHeight: document.documentElement.scrollHeight,
+        bodyWidth: document.body.getBoundingClientRect().width,
+      }));
+      dimensions.push(bounds);
+      expect(bounds.scrollWidth).toBe(viewport.width);
+      expect(bounds.bodyWidth).toBe(viewport.width);
+      const screenshot = await page.screenshot({ path: `test-results/screenshots/presentation-fresh-${viewport.width}.png`, fullPage: true });
+      // PNG IHDR width guards against stale full-page capture dimensions after viewport resizing.
+      expect(screenshot.readUInt32BE(16)).toBe(viewport.width);
+      expect(screenshot.readUInt32BE(20)).toBe(bounds.scrollHeight);
+      const projects = await page.locator('#projects').boundingBox();
+      expect(projects).not.toBeNull();
+      // Capture from the top-of-page canvas: scrolling a tall element above the viewport can
+      // otherwise include offscreen fixed UI in Chromium's element screenshot.
+      await page.screenshot({ path: `test-results/screenshots/presentation-projects-${viewport.width}.png`, fullPage: true, clip: projects! });
+    } finally {
+      await context.close();
+    }
+  }
+  await testInfo.attach('independent-viewport-bounds', { body: JSON.stringify(dimensions, null, 2), contentType: 'application/json' });
+});
+
+test('presentation motion respects reduced-motion and leaves static content readable without scripts', async ({ browser, page }) => {
+  scenario('sample');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/');
+  await expect(page.locator('html')).toHaveCSS('scroll-behavior', 'auto');
+  await expect(page.locator('#projects .project-card').first()).toHaveCSS('opacity', '1');
+  await expect(page.locator('#projects')).toContainText('Account structure validation');
+
+  const context = await browser.newContext({ javaScriptEnabled: false, reducedMotion: 'reduce' });
+  const staticPage = await context.newPage();
+  await staticPage.goto('http://127.0.0.1:4173/');
+  await expect(staticPage.locator('script')).toHaveCount(0);
+  await expect(staticPage.locator('#projects .project-card')).toHaveCount(4);
+  await expect(staticPage.locator('#upcoming .project-card')).toHaveCount(2);
+  await expect(staticPage.locator('#projects .project-card').first()).toBeVisible();
+  await staticPage.goto('http://127.0.0.1:4173/#upcoming');
+  await expect(staticPage.locator('#upcoming h2')).toBeInViewport();
+  await context.close();
+});
+
 test('content remains available without scripts and all requests stay local', async ({ browser }) => {
   scenario('sample');
   const requests: string[] = [];
