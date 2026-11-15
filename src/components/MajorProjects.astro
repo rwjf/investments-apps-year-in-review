@@ -17,9 +17,11 @@ const { id, eyebrow, heading, lede, projects } = Astro.props;
 ---
 <section class="projects" id={id} aria-labelledby={`${id}-title`}>
   <div class="projects__heading">
-    <p class="eyebrow">{eyebrow}</p>
     <h2 id={`${id}-title`}>{heading}</h2>
     <p class="projects__lede">{lede}</p>
+  </div>
+  <div class="projects__chapter-heading">
+    <p class="eyebrow projects__chapter-label">{eyebrow}</p>
   </div>
   <ul class="projects__grid" role="list">
     {projects.map((project) => (

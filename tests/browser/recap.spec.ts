@@ -171,52 +171,123 @@ test('chapter links work by keyboard and layout remains usable at narrow and wid
   await expect(page.locator('html')).toHaveCSS('scroll-behavior', 'auto');
 });
 
-test('presentation chapters fill the screen without clipping the story', async ({ page }) => {
+test('project panels give each project a screen-sized step and grow sticky chapter labels', async ({ browser }) => {
   scenario('sample');
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto('/');
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'no-preference' });
+  try {
+    const page = await context.newPage();
+    await page.goto('http://127.0.0.1:4173/');
 
-  for (const id of ['projects', 'upcoming']) {
-    const section = page.locator(`#${id}`);
-    const bounds = await section.boundingBox();
-    expect(bounds).not.toBeNull();
-    expect(bounds!.x).toBe(0);
-    expect(bounds!.width).toBe(1440);
-    expect(bounds!.height).toBeGreaterThanOrEqual(648);
+    for (const [id, titles] of [
+      ['projects', ['Account structure validation', 'The data lake', 'Desktop app test environment', 'The shared toolkit']],
+      ['upcoming', ['Investments MCP server', 'Automated document retrieval']],
+    ] as const) {
+      const panels = page.locator(`#${id} .project-card`);
+      await expect(panels).toHaveCount(titles.length);
+      for (const [index, title] of titles.entries()) {
+        const panel = panels.nth(index);
+        await expect(panel.locator('.project-card__title')).toHaveText(title);
+        const bounds = await panel.boundingBox();
+        expect(bounds).not.toBeNull();
+        expect(bounds!.x).toBe(0);
+        expect(bounds!.width).toBe(1440);
+        expect(bounds!.height).toBeGreaterThanOrEqual(700);
+        expect(parseFloat(await panel.locator('.project-card__title').evaluate(el => getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(44);
+        expect(parseFloat(await panel.locator('.project-card__tagline').evaluate(el => getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(18);
+        expect(parseFloat(await panel.locator('.project-card__description').evaluate(el => getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(20);
+        await expect(panel).toContainText(index === 0 && id === 'projects' ? "what's recorded actually lines up" : title);
+      }
+    }
+
+    const projectsLabel = page.locator('#projects .projects__chapter-label');
+    await page.locator('#projects .projects__chapter-heading').evaluate(el => el.scrollIntoView({ block: 'start', behavior: 'instant' }));
+    const smallCompletedSize = parseFloat(await projectsLabel.evaluate(el => getComputedStyle(el).fontSize));
+    expect(smallCompletedSize).toBeLessThan(20);
+    await expect(page.locator('#projects .projects__chapter-heading')).toHaveCSS('position', 'sticky');
+    await page.screenshot({ path: 'test-results/screenshots/project-heading-small-1440.png' });
+
+    await page.evaluate(() => window.scrollTo({ top: window.scrollY + 1150, behavior: 'instant' }));
+    await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+    const largeCompletedSize = parseFloat(await projectsLabel.evaluate(el => getComputedStyle(el).fontSize));
+    expect(largeCompletedSize).toBeGreaterThan(smallCompletedSize * 1.5);
+    expect(largeCompletedSize).toBeGreaterThanOrEqual(30);
+    const stickyTop = (await page.locator('#projects .projects__chapter-heading').boundingBox())!.y;
+    expect(stickyTop).toBeGreaterThanOrEqual(0);
+    expect(stickyTop).toBeLessThanOrEqual(4);
+    await page.screenshot({ path: 'test-results/screenshots/project-heading-large-1440.png' });
+
+    for (const index of [1, 3]) {
+      await page.locator('#projects .project-card').nth(index).evaluate(el => el.scrollIntoView({ block: 'start', behavior: 'instant' }));
+      await expect(projectsLabel).toBeInViewport();
+      expect(parseFloat(await projectsLabel.evaluate(el => getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(30);
+      expect((await page.locator('#projects .projects__chapter-heading').boundingBox())!.y).toBeLessThanOrEqual(4);
+    }
+
+    const upcomingLabel = page.locator('#upcoming .projects__chapter-label');
+    await page.locator('#upcoming .projects__chapter-heading').evaluate(el => el.scrollIntoView({ block: 'start', behavior: 'instant' }));
+    await expect(projectsLabel).not.toBeInViewport();
+    const smallUpcomingSize = parseFloat(await upcomingLabel.evaluate(el => getComputedStyle(el).fontSize));
+    expect(smallUpcomingSize).toBeLessThan(20);
+    await page.screenshot({ path: 'test-results/screenshots/workshop-heading-small-1440.png' });
+    await page.evaluate(() => window.scrollTo({ top: window.scrollY + 1150, behavior: 'instant' }));
+    await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+    const largeUpcomingSize = parseFloat(await upcomingLabel.evaluate(el => getComputedStyle(el).fontSize));
+    expect(largeUpcomingSize).toBeGreaterThan(smallUpcomingSize * 1.5);
+    expect(largeUpcomingSize).toBeGreaterThanOrEqual(30);
+    expect((await page.locator('#upcoming .projects__chapter-heading').boundingBox())!.y).toBeLessThanOrEqual(4);
+    await page.screenshot({ path: 'test-results/screenshots/workshop-heading-large-1440.png' });
+
+    await page.locator('#security h2').evaluate(el => el.scrollIntoView({ block: 'start', behavior: 'instant' }));
+    await expect(projectsLabel).not.toBeInViewport();
+    await expect(upcomingLabel).not.toBeInViewport();
+    await expect(page.locator('#security h2')).toBeInViewport();
+  } finally {
+    await context.close();
   }
-  await expect(page.locator('#projects .project-card')).toHaveCount(4);
-  await expect(page.locator('#upcoming .project-card')).toHaveCount(2);
+});
 
-  for (const id of ['security', 'deployments', 'work-items']) {
-    const bounds = await page.locator(`#${id}`).boundingBox();
-    expect(bounds).not.toBeNull();
-    expect(bounds!.height).toBeGreaterThanOrEqual(648);
-  }
-
-  for (const width of [320, 375, 640, 1440]) {
-    await page.setViewportSize({ width, height: 900 });
-    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-    for (const id of ['projects', 'upcoming']) {
-      const bounds = await page.locator(`#${id}`).boundingBox();
-      expect(bounds).not.toBeNull();
-      expect(bounds!.x).toBe(0);
-      expect(bounds!.width).toBe(width);
-      await expect(page.locator(`#${id} .project-card`)).toHaveCount(id === 'projects' ? 4 : 2);
+test('project panels stay full-width and naturally sized on mobile', async ({ browser }) => {
+  scenario('sample');
+  for (const width of [320, 375]) {
+    const context = await browser.newContext({ viewport: { width, height: 812 }, reducedMotion: 'reduce' });
+    try {
+      const page = await context.newPage();
+      await page.goto('http://127.0.0.1:4173/');
+      await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      for (const id of ['projects', 'upcoming']) {
+        const panels = page.locator(`#${id} .project-card`);
+        for (const panel of await panels.all()) {
+          const bounds = await panel.boundingBox();
+          expect(bounds).not.toBeNull();
+          expect(bounds!.x).toBe(0);
+          expect(bounds!.width).toBe(width);
+          expect(bounds!.height).toBeGreaterThan(300);
+          expect(bounds!.height).toBeLessThan(812);
+          await expect(panel.locator('.project-card__description')).toBeVisible();
+        }
+      }
+      await page.screenshot({ path: `test-results/screenshots/project-panels-mobile-${width}.png`, fullPage: true });
+      await page.goto('http://127.0.0.1:4173/#upcoming');
+      await expect(page.locator('#upcoming h2')).toBeInViewport();
+    } finally {
+      await context.close();
     }
   }
 
-  await page.setViewportSize({ width: 1280, height: 600 });
-  await page.goto('/');
-  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-  for (const id of ['projects', 'upcoming', 'security', 'deployments', 'work-items']) {
-    await page.locator(`#${id}`).scrollIntoViewIfNeeded();
-    await expect(page.locator(`#${id} h2`)).toBeInViewport();
-  }
-
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  for (const id of ['projects', 'upcoming', 'security', 'deployments', 'work-items']) {
-    await page.goto(`/#${id}`);
-    await expect(page.locator(`#${id} h2`)).toBeInViewport();
+  const shortContext = await browser.newContext({ viewport: { width: 1280, height: 600 }, reducedMotion: 'reduce' });
+  try {
+    const page = await shortContext.newPage();
+    await page.goto('http://127.0.0.1:4173/#projects');
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    const firstPanel = page.locator('#projects .project-card').first();
+    const bounds = await firstPanel.boundingBox();
+    expect(bounds).not.toBeNull();
+    expect(bounds!.width).toBe(1280);
+    expect(bounds!.height).toBeGreaterThanOrEqual(490);
+    await expect(firstPanel.locator('.project-card__title')).toBeVisible();
+    await expect(firstPanel.locator('.project-card__description')).toBeVisible();
+  } finally {
+    await shortContext.close();
   }
 });
 
@@ -230,8 +301,8 @@ for (const javaScriptEnabled of [true, false]) {
         await page.goto('http://127.0.0.1:4173/');
         await expect(page.locator('script')).toHaveCount(0);
         expect(await page.evaluate(() => CSS.supports('animation-timeline', 'view()'))).toBe(true);
-        const reveals = page.locator('.projects__heading, .project-card, .coffee-scale, .robot-overlords, .chapter__heading, .chapter__body, .explore__heading, .chapter-index a');
-        await expect(reveals).toHaveCount(20);
+        const reveals = page.locator('.project-card, .coffee-scale, .robot-overlords, .chapter__heading, .chapter__body, .explore__heading, .chapter-index a');
+        await expect(reveals).toHaveCount(18);
         // A below-fold card starts hidden: this checks the active motion path, not reduced motion.
         await expect(page.locator('#projects .project-card').first()).toHaveCSS('opacity', '0');
         for (const reveal of await reveals.all()) {
@@ -263,7 +334,7 @@ test('presentation unsupported-timeline gate leaves content opaque and unanimate
   });
   await page.goto('/');
   expect(replacedGate).toBe(true);
-  for (const element of await page.locator('.projects__heading, .project-card, .coffee-scale, .robot-overlords, .chapter__heading, .chapter__body, .explore__heading, .chapter-index a').all()) {
+  for (const element of await page.locator('.projects__chapter-label, .project-card, .coffee-scale, .robot-overlords, .chapter__heading, .chapter__body, .explore__heading, .chapter-index a').all()) {
     await expect(element).toHaveCSS('opacity', '1');
     await expect(element).toHaveCSS('animation-name', 'none');
   }
@@ -297,6 +368,8 @@ test('presentation independent viewports produce correctly sized screenshots wit
       // Capture from the top-of-page canvas: scrolling a tall element above the viewport can
       // otherwise include offscreen fixed UI in Chromium's element screenshot.
       await page.screenshot({ path: `test-results/screenshots/presentation-projects-${viewport.width}.png`, fullPage: true, clip: projects! });
+      await page.locator('#projects .project-card').first().evaluate(el => el.scrollIntoView({ block: 'start', behavior: 'instant' }));
+      await page.screenshot({ path: `test-results/screenshots/project-panels-viewport-${viewport.width}.png` });
     } finally {
       await context.close();
     }
@@ -309,7 +382,7 @@ test('presentation motion respects reduced-motion and leaves static content read
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
   await expect(page.locator('html')).toHaveCSS('scroll-behavior', 'auto');
-  await expect(page.locator('#projects .project-card').first()).toHaveCSS('opacity', '1');
+  await expect(page.locator('#projects .projects__chapter-label')).toHaveCSS('animation-name', 'none');
   await expect(page.locator('#projects')).toContainText('Account structure validation');
 
   const context = await browser.newContext({ javaScriptEnabled: false, reducedMotion: 'reduce' });
